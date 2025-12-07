@@ -112,13 +112,25 @@ END //
 -- 3. REGISTROS (Eventos, Escuelas, Equipos, Participantes)
 -- =================================================================
 DROP PROCEDURE IF EXISTS AltaEvento //
-CREATE PROCEDURE AltaEvento(IN p_nombre VARCHAR(100), IN p_lugar VARCHAR(100), IN p_fecha DATE, OUT mensaje VARCHAR(100))
+CREATE PROCEDURE AltaEvento(
+    IN p_nombre VARCHAR(100), 
+    IN p_lugar VARCHAR(100), 
+    IN p_fecha DATE, 
+    OUT mensaje VARCHAR(100)
+)
 BEGIN
+    -- 1. Validar Nombre Duplicado
     IF EXISTS (SELECT 1 FROM Evento WHERE nombre = p_nombre) THEN
-        SET mensaje = 'El evento ya existe.';
+        SET mensaje = 'Error: El nombre del evento ya existe.';
+    
+    -- 2. Validar Lugar Duplicado (Mismo Lugar en la Misma Fecha)
+    ELSEIF EXISTS (SELECT 1 FROM Evento WHERE lugar = p_lugar AND fecha = p_fecha) THEN
+        SET mensaje = 'Error: Ya existe un evento en ese lugar para esa fecha.';
+        
     ELSE
+        -- Si todo está limpio, insertamos
         INSERT INTO Evento (nombre, lugar, fecha) VALUES (p_nombre, p_lugar, p_fecha);
-        SET mensaje = 'Evento creado.';
+        SET mensaje = 'Éxito: Evento creado correctamente.';
     END IF;
 END //
 

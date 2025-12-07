@@ -13,13 +13,11 @@ $resumen = ModeloAdmin::obtenerResumen();
 if (!$resumen) $resumen = ['total_equipos'=>0, 'eventos_activos'=>0, 'total_jueces'=>0, 'total_participantes'=>0];
 
 $listaUsuarios = ModeloAdmin::listarUsuarios();
-$listaEquipos  = ModeloAdmin::listarEquipos(); // Resumen (últimos 10)
-$listaEquiposCompleta = ModeloAdmin::listarEquiposDetallado(); // NUEVO: Todos para las tarjetas
+$listaEquipos  = ModeloAdmin::listarEquipos();
+$listaEquiposCompleta = ModeloAdmin::listarEquiposDetallado();
 $listaEventos  = ModeloProcesos::listarEventos();
 $listaEscuelas = ModeloProcesos::listarEscuelas();
 $listaCategorias = ModeloProcesos::listarCategorias();
-
-$msg = isset($_GET['msg']) ? $_GET['msg'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -45,7 +43,7 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
         .header-bar { background: var(--header-bg); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .work-area { flex: 1; padding: 30px; overflow-y: auto; }
         
-        /* CARDS GENERALES */
+        /* CARDS & FORMS */
         .content-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 30px; }
         .card-title { font-size: 1.1rem; color: var(--sidebar-bg); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
         
@@ -67,39 +65,58 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
         .section-view.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- NUEVO: ESTILOS PARA TARJETAS INTERACTIVAS Y FILTRO --- */
+        /* TEAM CARDS */
         .filter-bar { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .teams-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        
         .team-card-interactive {
             background: white; border-radius: 15px; padding: 20px; position: relative; border: 1px solid #eee;
             box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: all 0.3s; border-top: 5px solid #2C2C54;
         }
         .team-card-interactive:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.1); border-top-color: #FDF5A3; }
-        
         .card-team-name { font-size: 1.2rem; font-weight: 800; color: #333; margin-bottom: 5px; }
         .card-school { font-size: 0.85rem; color: #666; display: flex; align-items: center; gap: 5px; margin-bottom: 15px; }
         .card-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; background: #eee; color: #555; margin-right: 5px; }
         .badge-cat { background: #e3f2fd; color: #1565c0; }
         .card-stats { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; font-size: 0.9rem; color: #555; }
 
-        /* MODAL Y ALERTAS */
+        /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; }
         .close-modal { float: right; cursor: pointer; font-size: 1.2rem; }
-        .alert-float { position: fixed; top: 20px; right: 20px; background: #d4edda; color: #155724; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 2000; display: none; border-left: 5px solid #28a745; }
+
+        /* ALERTAS FLOTANTES MEJORADAS */
+        .alert-float { 
+            position: fixed; top: 20px; right: 20px; 
+            padding: 15px 25px; border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            z-index: 2000; display: none; font-weight: bold;
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        .alert-success { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="alertBox" class="alert-float"><i class="fas fa-check-circle"></i> <span id="alertText"></span></div>
+    <!-- CAJAS DE ALERTA -->
+    <div id="alertBoxSuccess" class="alert-float alert-success">
+        <i class="fas fa-check-circle"></i> <span id="alertTextSuccess"></span>
+    </div>
+    
+    <div id="alertBoxError" class="alert-float alert-error">
+        <i class="fas fa-exclamation-triangle"></i> <span id="alertTextError"></span>
+    </div>
 
     <aside class="sidebar">
         <div class="brand"><i class="fas fa-cogs"></i> &nbsp; VEX Control</div>
         <div class="menu-item active" onclick="showSection('resumen', this)"><i class="fas fa-home"></i> Resumen</div>
-        
         <div class="menu-item" onclick="showSection('all-teams', this)"><i class="fas fa-list-alt"></i> Base de Datos Equipos</div>
-        
         <div class="menu-item" onclick="showSection('eventos', this)"><i class="fas fa-calendar-alt"></i> Gestión de Eventos</div>
         <div class="menu-item" onclick="showSection('escuelas', this)"><i class="fas fa-university"></i> Escuelas</div>
         <div class="menu-item" onclick="showSection('asignacion', this)"><i class="fas fa-gavel"></i> Asignación Jueces</div>
@@ -115,10 +132,11 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
 
         <div class="work-area">
 
+            <!-- RESUMEN -->
             <div id="resumen" class="section-view active">
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px;">
                     <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['total_equipos']; ?></h3><p>Equipos</p></div>
-                    <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['eventos_activos']; ?></h3><p>Eventos</p></div>
+                    <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['eventos_activos']; ?></h3><p>Eventos Activos</p></div>
                     <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['total_jueces']; ?></h3><p>Jueces</p></div>
                     <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['total_participantes']; ?></h3><p>Participantes</p></div>
                 </div>
@@ -145,8 +163,8 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                 </div>
             </div>
 
+            <!-- BASE DE DATOS EQUIPOS -->
             <div id="all-teams" class="section-view">
-                
                 <div class="filter-bar">
                     <i class="fas fa-filter" style="color:var(--sidebar-bg);"></i>
                     <span style="font-weight:bold;">Filtrar por Escuela:</span>
@@ -193,13 +211,13 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                 </div>
             </div>
 
+            <!-- GESTIÓN DE EVENTOS -->
             <div id="eventos" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Crear Nuevo Evento</div>
                     <form action="../../controllers/control_evento.php" method="POST">
-                        <input type="text" name="nombreEvento" class="form-control" placeholder="Nombre" required>
-                        <input type="text" name="lugarEvento" class="form-control" placeholder="Lugar" required>
-                        <!-- AQUÍ ESTÁ LA CORRECCIÓN: Se agrega min="HOY" -->
+                        <input type="text" name="nombreEvento" class="form-control" placeholder="Nombre del Evento" required>
+                        <input type="text" name="lugarEvento" class="form-control" placeholder="Lugar / Sede" required>
                         <input type="date" name="fechaEvento" class="form-control" min="<?php echo date('Y-m-d'); ?>" required>
                         <button class="btn-action">Guardar Evento</button>
                     </form>
@@ -222,12 +240,13 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                 </div>
             </div>
 
+            <!-- ESCUELAS -->
             <div id="escuelas" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Registrar Institución</div>
                     <form action="../../controllers/control_escuela.php" method="POST">
-                        <input type="text" name="codEscuela" class="form-control" placeholder="Código (ID)" required>
-                        <input type="text" name="nombreEscuela" class="form-control" placeholder="Nombre" required>
+                        <input type="text" name="codEscuela" class="form-control" placeholder="Siglas / Código (Ej. UNAM)" required>
+                        <input type="text" name="nombreEscuela" class="form-control" placeholder="Nombre Completo" required>
                         <button class="btn-action">Guardar Escuela</button>
                     </form>
                 </div>
@@ -251,6 +270,7 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                 </div>
             </div>
 
+            <!-- ASIGNACIÓN JUECES -->
             <div id="asignacion" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Asignar Jueces</div>
@@ -270,6 +290,7 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                 </div>
             </div>
 
+            <!-- USUARIOS -->
             <div id="usuarios" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Gestión de Usuarios</div>
@@ -293,6 +314,7 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
         </div>
     </div>
 
+    <!-- MODAL EDITAR USUARIO -->
     <div id="modalEditarUsuario" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal()">&times;</span>
@@ -325,16 +347,34 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
             el.classList.add('active');
         }
 
+        // --- SISTEMA DE NOTIFICACIONES MEJORADO ---
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // 1. Mensaje de Éxito (Verde)
         const msg = urlParams.get('msg');
         if(msg) {
-            const alertBox = document.getElementById('alertBox');
-            document.getElementById('alertText').innerText = msg;
+            const alertBox = document.getElementById('alertBoxSuccess');
+            document.getElementById('alertTextSuccess').innerText = msg;
             alertBox.style.display = 'block';
-            setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
+            setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
+            
+            // Limpiar URL
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // LÓGICA DE FILTRADO DE TARJETAS
+        // 2. Mensaje de Error (Rojo)
+        const error = urlParams.get('error');
+        if(error) {
+            const alertBox = document.getElementById('alertBoxError');
+            document.getElementById('alertTextError').innerText = error;
+            alertBox.style.display = 'block';
+            setTimeout(() => { alertBox.style.display = 'none'; }, 6000);
+
+            // Limpiar URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Filtro y demás scripts...
         function filtrarEquipos() {
             const filtro = document.getElementById('schoolFilter').value;
             const tarjetas = document.querySelectorAll('.team-card-interactive');
