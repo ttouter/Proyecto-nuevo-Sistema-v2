@@ -179,7 +179,7 @@ END //
 DROP PROCEDURE IF EXISTS ListarEventos //
 CREATE PROCEDURE ListarEventos()
 BEGIN
-    SELECT nombre, fecha FROM Evento ORDER BY fecha DESC;
+    SELECT nombre, lugar, fecha FROM Evento ORDER BY fecha DESC;
 END //
 
 DROP PROCEDURE IF EXISTS ListarCategorias //
