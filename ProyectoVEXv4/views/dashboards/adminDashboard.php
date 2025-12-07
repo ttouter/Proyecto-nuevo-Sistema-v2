@@ -62,8 +62,9 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         .tag-green { background: #d4edda; color: #155724; }
         .tag-blue  { background: #cce5ff; color: #004085; }
         .tag-red   { background: #f8d7da; color: #721c24; }
-        .tag-purple { background: #e0ccff; color: #4a0080; } /* Nuevo color para 'Ambos' */
+        .tag-purple { background: #e0ccff; color: #4a0080; }
         .tag-gray  { background: #e2e3e5; color: #383d41; }
+        .text-muted { color: #aaa; font-style: italic; }
 
         /* SECCIONES */
         .section-view { display: none; }
@@ -304,36 +305,38 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                             <tr>
                                 <th>Nombre</th>
                                 <th>Email</th>
-                                <th>Rol</th>
-                                <th>Categorías</th>
+                                <!-- Columnas modificadas -->
+                                <th>Entrenador</th>
+                                <th>Juez</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach($listaUsuarios as $u): ?>
                                 <?php 
-                                    // Determinar color del badge según rol
-                                    $rolClass = 'tag-gray';
-                                    if ($u['rol_detectado'] == 'Entrenador') $rolClass = 'tag-green';
-                                    if ($u['rol_detectado'] == 'Juez') $rolClass = 'tag-red';
-                                    if ($u['rol_detectado'] == 'Ambos') $rolClass = 'tag-purple';
+                                    $rol = $u['rol_detectado'];
+                                    
+                                    // Columna Entrenador
+                                    $colEntrenador = '<span class="text-muted">No participa</span>';
+                                    if ($rol == 'Entrenador' || $rol == 'Ambos') {
+                                        $cat = !empty($u['cat_entrenador']) ? $u['cat_entrenador'] : 'Activo (Sin equipos)';
+                                        $colEntrenador = '<div style="color:#155724;"><i class="fas fa-user-tie"></i> ' . $cat . '</div>';
+                                    }
+
+                                    // Columna Juez
+                                    $colJuez = '<span class="text-muted">No participa</span>';
+                                    if ($rol == 'Juez' || $rol == 'Ambos') {
+                                        $cat = !empty($u['cat_juez']) ? $u['cat_juez'] : 'Asignado';
+                                        $colJuez = '<div style="color:#721c24;"><i class="fas fa-gavel"></i> ' . $cat . '</div>';
+                                    }
                                 ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($u['nombre']); ?></td>
                                 <td><?php echo htmlspecialchars($u['email']); ?></td>
-                                <td><span class="tag <?php echo $rolClass; ?>"><?php echo $u['rol_detectado']; ?></span></td>
-                                <td style="font-size:0.85rem; line-height:1.4;">
-                                    <?php 
-                                        $infoCats = [];
-                                        if(!empty($u['cat_entrenador'])) $infoCats[] = "<div style='color:#155724;'><i class='fas fa-user-tie'></i> " . $u['cat_entrenador'] . "</div>";
-                                        if(!empty($u['cat_juez'])) $infoCats[] = "<div style='color:#721c24;'><i class='fas fa-gavel'></i> " . $u['cat_juez'] . "</div>";
-                                        
-                                        if(empty($infoCats)) echo "<span style='color:#ccc;'>--</span>";
-                                        else echo implode('', $infoCats);
-                                    ?>
-                                </td>
+                                <td><?php echo $colEntrenador; ?></td>
+                                <td><?php echo $colJuez; ?></td>
                                 <td>
-                                    <button class="btn-warning" onclick="abrirModalEditar(<?php echo $u['idAsistente']; ?>, '<?php echo $u['nombre']; ?>')"><i class="fas fa-edit"></i> Editar</button>
+                                    <button class="btn-warning" onclick="abrirModalEditar(<?php echo $u['idAsistente']; ?>, '<?php echo $u['nombre']; ?>')"><i class="fas fa-edit"></i> Editar Rol</button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -352,18 +355,32 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             <p>Usuario: <strong id="nombreUsuarioModal">...</strong></p>
             <form action="../../controllers/control_editar_usuario.php" method="POST">
                 <input type="hidden" name="idUsuario" id="idUsuarioModal">
+                
                 <label>Nuevo Rol:</label>
-                <select name="nuevoRol" class="form-control">
+                <select name="nuevoRol" id="nuevoRolSelect" class="form-control" onchange="toggleCategoriaSelect()">
                     <option value="entrenador">Entrenador</option>
                     <option value="juez">Juez</option>
                     <option value="ambos">Ambos</option>
                 </select>
-                <label>Escuela (Para Juez/Entrenador):</label>
+
+                <!-- Select de Categoría (Solo visible para Juez/Ambos) -->
+                <div id="divCategoriaModal" style="display:none;">
+                    <label>Categoría para Juez:</label>
+                    <select name="categoriaModal" class="form-control">
+                        <option value="">-- Selecciona Categoría --</option>
+                        <?php foreach ($listaCategorias as $cat): ?>
+                            <option value="<?php echo $cat['idCategoria']; ?>"><?php echo htmlspecialchars($cat['nombre']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <label>Escuela (Procedencia):</label>
                 <select name="escuelaModal" class="form-control">
                      <?php foreach ($listaEscuelas as $esc): ?>
                         <option value="<?php echo $esc['codEscuela']; ?>"><?php echo htmlspecialchars($esc['nombreEscuela']); ?></option>
                     <?php endforeach; ?>
                 </select>
+                
                 <button type="submit" class="btn-action" style="width:100%; margin-top:10px;">Guardar Cambios</button>
             </form>
         </div>
@@ -431,12 +448,26 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                     document.getElementById('areaJueces').style.display='block';
                 });
         }
+        
         function abrirModalEditar(id, nombre) {
             document.getElementById('idUsuarioModal').value=id;
             document.getElementById('nombreUsuarioModal').innerText=nombre;
             document.getElementById('modalEditarUsuario').style.display='flex';
+            toggleCategoriaSelect(); // Verificar estado inicial
         }
+        
         function cerrarModal() { document.getElementById('modalEditarUsuario').style.display='none'; }
+        
+        function toggleCategoriaSelect() {
+            const rol = document.getElementById('nuevoRolSelect').value;
+            const divCat = document.getElementById('divCategoriaModal');
+            if(rol === 'juez' || rol === 'ambos') {
+                divCat.style.display = 'block';
+            } else {
+                divCat.style.display = 'none';
+            }
+        }
+
         window.onclick = function(e) { if(e.target == document.getElementById('modalEditarUsuario')) cerrarModal(); }
     </script>
 </body>
