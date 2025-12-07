@@ -88,6 +88,20 @@ class ModeloAdmin {
         } catch(Exception $e) {}
     }
 
+    // --- NUEVA FUNCIÓN DE VALIDACIÓN DE CONFLICTO ---
+    public static function verificarConflictoInteres($idAsistente, $idCategoriaJuez) {
+        global $pdo;
+        try {
+            // Verifica si el asistente tiene equipos registrados en la categoría donde quiere ser juez
+            $sql = "SELECT COUNT(*) FROM Equipo WHERE idAsistente = ? AND idCategoria_Categoria = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$idAsistente, $idCategoriaJuez]);
+            
+            // Si el conteo es mayor a 0, existe un conflicto
+            return $stmt->fetchColumn() > 0;
+        } catch (Exception $e) { return false; }
+    }
+
     // --- OTRAS FUNCIONES ---
 
     public static function crearEvento($nombre, $lugar, $fecha) {

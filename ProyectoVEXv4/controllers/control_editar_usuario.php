@@ -6,16 +6,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $idUsuario = $_POST['idUsuario'];
     $nuevoRol  = $_POST['nuevoRol'];
     $escuela   = $_POST['escuelaModal'];
-    $categoria = $_POST['categoriaModal']; // Nuevo campo recibido
+    $categoria = $_POST['categoriaModal']; // Recibimos la categoría seleccionada
 
-    // Si no seleccionó categoría (ej. para entrenador), ponemos null o manejamos error
-    if($nuevoRol == 'juez' && empty($categoria)) {
-        // Podrías forzar un error aquí si es obligatorio
+    // Validación básica: Si es Juez o Ambos, la categoría es obligatoria
+    if (($nuevoRol == 'juez' || $nuevoRol == 'ambos') && empty($categoria)) {
+        header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode("Error: Debes seleccionar una categoría para asignar el rol de Juez."));
+        exit;
     }
+
+    // --- NUEVA RESTRICCIÓN: CONFLICTO DE INTERÉS ---
+    // Si se intenta asignar rol de Juez (o Ambos), verificar que no tenga equipos en esa misma categoría
+    if ($nuevoRol == 'juez' || $nuevoRol == 'ambos') {
+        if (ModeloAdmin::verificarConflictoInteres($idUsuario, $categoria)) {
+            $msg = "Error: Conflicto de interés. Este usuario ya es Entrenador de un equipo en esa categoría, por lo tanto no puede ser Juez en la misma.";
+            header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode($msg));
+            exit;
+        }
+    }
+
+    // --- PROCESAMIENTO DE ROLES ---
 
     if ($nuevoRol == 'juez') {
         ModeloAdmin::quitarRolEntrenador($idUsuario);
-        // Pasamos la categoría al crear/editar el juez
+        // Asignar Juez con la categoría seleccionada
         ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
     }
     
@@ -25,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     elseif ($nuevoRol == 'ambos') {
+        // Asignar ambos roles
         ModeloAdmin::asignarRolEntrenador($idUsuario, $escuela);
-        // Pasamos la categoría también aquí
         ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
     }
 
