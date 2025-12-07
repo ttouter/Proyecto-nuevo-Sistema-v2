@@ -63,9 +63,6 @@ class ModeloAdmin {
 
     public static function eliminarEscuela($codigo) {
         global $pdo; try {
-            // Nota: Para eliminar también deberíamos usar un SP idealmente, 
-            // pero si prefieres mantenerlo simple, aquí usamos una sentencia preparada segura.
-            // Para ser estrictos con tu regla, cámbialo a un SP "BajaEscuela" si lo deseas.
             $stmt = $pdo->prepare("DELETE FROM EscuelaProcedencia WHERE codEscuela = ?");
             $stmt->execute([$codigo]);
             return "Escuela eliminada correctamente.";
@@ -77,17 +74,29 @@ class ModeloAdmin {
 
     public static function asignarRolEntrenador($id, $cod) { 
         global $pdo; try{ 
-            // Podrías crear un SP "AsignarRolEntrenador" para encapsular este INSERT
             $pdo->prepare("INSERT IGNORE INTO Entrenador (idAsistente_Asistente, codEscuela_EscuelaProcedencia) VALUES (?,?)")->execute([$id,$cod]); 
         }catch(Exception $e){} 
     }
 
     public static function asignarRolJuez($id, $cod, $gr) { 
         global $pdo; try{ 
-            // Podrías crear un SP "AsignarRolJuez"
             $pdo->prepare("INSERT IGNORE INTO Juez (idAsistente_Asistente, codEscuela_EscuelaProcedencia, gradoEstudios) VALUES (?,?,?)")->execute([$id,$cod,$gr]); 
         }catch(Exception $e){} 
     }
+    
+    // --- NUEVAS FUNCIONES PARA LIMPIAR ROLES ---
+    public static function quitarRolEntrenador($id) {
+        global $pdo; try {
+            $pdo->prepare("DELETE FROM Entrenador WHERE idAsistente_Asistente = ?")->execute([$id]);
+        } catch(Exception $e) {}
+    }
+
+    public static function quitarRolJuez($id) {
+        global $pdo; try {
+            $pdo->prepare("DELETE FROM Juez WHERE idAsistente_Asistente = ?")->execute([$id]);
+        } catch(Exception $e) {}
+    }
+    // -------------------------------------------
     
     public static function obtenerJuecesValidos($cat) { 
         global $pdo; try{ 
@@ -99,7 +108,6 @@ class ModeloAdmin {
 
     public static function obtenerEquiposPorCategoria($cat) { 
         global $pdo; try{ 
-            // Idealmente convertir a SP: "CALL ObtenerEquiposPorCategoria(?)"
             $s=$pdo->prepare("SELECT idEquipo FROM Equipo WHERE idCategoria_Categoria=?"); 
             $s->execute([$cat]); 
             return $s->fetchAll(PDO::FETCH_ASSOC); 

@@ -318,10 +318,23 @@ END //
 DROP PROCEDURE IF EXISTS ListarUsuariosAdmin //
 CREATE PROCEDURE ListarUsuariosAdmin()
 BEGIN
-    SELECT a.idAsistente, a.nombre, a.apellidoPat, a.email,
-    CASE WHEN j.idJuez IS NOT NULL THEN 'Juez' WHEN e.idEntrenador IS NOT NULL THEN 'Entrenador' ELSE 'Asistente' END as rol_detectado
-    FROM Asistente a LEFT JOIN Juez j ON a.idAsistente = j.idAsistente_Asistente
-    LEFT JOIN Entrenador e ON a.idAsistente = e.idAsistente_Asistente;
+    SELECT 
+        a.idAsistente, 
+        a.nombre, 
+        a.apellidoPat, 
+        a.email,
+        CASE
+            -- Verificar si existen registros en AMBAS tablas
+            WHEN j.idJuez IS NOT NULL AND e.idEntrenador IS NOT NULL THEN 'Ambos'
+            WHEN j.idJuez IS NOT NULL THEN 'Juez'
+            WHEN e.idEntrenador IS NOT NULL THEN 'Entrenador'
+            ELSE 'Asistente'
+        END as rol_detectado
+    FROM Asistente a
+    LEFT JOIN Juez j ON a.idAsistente = j.idAsistente_Asistente
+    LEFT JOIN Entrenador e ON a.idAsistente = e.idAsistente_Asistente
+    -- Importante: Agrupar por ID para eliminar duplicados si hay datos sucios
+    GROUP BY a.idAsistente; 
 END //
 
 DROP PROCEDURE IF EXISTS AsignarRolJuezAdmin //

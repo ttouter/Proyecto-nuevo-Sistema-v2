@@ -57,8 +57,13 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         .vex-table th { background: var(--sidebar-bg); color: white; padding: 12px; text-align: left; }
         .vex-table td { padding: 12px; border-bottom: 1px solid #eee; }
         .tag { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        
+        /* TAGS DE ESTADO */
         .tag-green { background: #d4edda; color: #155724; }
-        .tag-gray { background: #e2e3e5; color: #383d41; }
+        .tag-blue  { background: #cce5ff; color: #004085; }
+        .tag-red   { background: #f8d7da; color: #721c24; }
+        .tag-purple { background: #e0ccff; color: #4a0080; } /* Nuevo color para 'Ambos' */
+        .tag-gray  { background: #e2e3e5; color: #383d41; }
 
         /* SECCIONES */
         .section-view { display: none; }
@@ -298,10 +303,17 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                         <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acciones</th></tr></thead>
                         <tbody>
                             <?php foreach($listaUsuarios as $u): ?>
+                                <?php 
+                                    // Determinar color del badge según rol
+                                    $rolClass = 'tag-gray';
+                                    if ($u['rol_detectado'] == 'Entrenador') $rolClass = 'tag-green';
+                                    if ($u['rol_detectado'] == 'Juez') $rolClass = 'tag-red';
+                                    if ($u['rol_detectado'] == 'Ambos') $rolClass = 'tag-purple';
+                                ?>
                             <tr>
-                                <td><?php echo $u['nombre']; ?></td>
-                                <td><?php echo $u['email']; ?></td>
-                                <td><span class="tag tag-green"><?php echo $u['rol_detectado']; ?></span></td>
+                                <td><?php echo htmlspecialchars($u['nombre']); ?></td>
+                                <td><?php echo htmlspecialchars($u['email']); ?></td>
+                                <td><span class="tag <?php echo $rolClass; ?>"><?php echo $u['rol_detectado']; ?></span></td>
                                 <td>
                                     <button class="btn-warning" onclick="abrirModalEditar(<?php echo $u['idAsistente']; ?>, '<?php echo $u['nombre']; ?>')"><i class="fas fa-edit"></i> Editar</button>
                                 </td>
