@@ -6,33 +6,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $idUsuario = $_POST['idUsuario'];
     $nuevoRol  = $_POST['nuevoRol'];
     $escuela   = isset($_POST['escuelaModal']) ? $_POST['escuelaModal'] : '';
-    $categoria = $_POST['categoriaModal']; // Recibimos la categoría seleccionada
+    
+    // NOTA: Ya no recibimos la categoría aquí. Se asignará después.
+    $categoria = null;
 
-    // LOGICA ACTUALIZADA: Si no se envió escuela en el formulario (porque se eliminó el campo),
-    // buscamos la escuela actual del usuario para no romper la integridad de datos.
+    // LOGICA ACTUALIZADA: Buscar escuela actual
     if (empty($escuela)) {
         $escuelaActual = ModeloAdmin::obtenerEscuelaUsuario($idUsuario);
         if ($escuelaActual) {
             $escuela = $escuelaActual;
         } else {
-            // Fallback en caso extremo de que no tenga escuela (raro)
+            // Fallback en caso extremo
             header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode("Error Crítico: No se pudo determinar la escuela del usuario."));
-            exit;
-        }
-    }
-
-    // Validación básica: Si es Juez o Ambos, la categoría es obligatoria
-    if (($nuevoRol == 'juez' || $nuevoRol == 'ambos') && empty($categoria)) {
-        header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode("Error: Debes seleccionar una categoría para asignar el rol de Juez."));
-        exit;
-    }
-
-    // --- NUEVA RESTRICCIÓN: CONFLICTO DE INTERÉS ---
-    // Si se intenta asignar rol de Juez (o Ambos), verificar que no tenga equipos en esa misma categoría
-    if ($nuevoRol == 'juez' || $nuevoRol == 'ambos') {
-        if (ModeloAdmin::verificarConflictoInteres($idUsuario, $categoria)) {
-            $msg = "Error: Conflicto de interés. Este usuario ya es Entrenador de un equipo en esa categoría, por lo tanto no puede ser Juez en la misma.";
-            header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode($msg));
             exit;
         }
     }
@@ -41,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($nuevoRol == 'juez') {
         ModeloAdmin::quitarRolEntrenador($idUsuario);
-        // Asignar Juez con la categoría seleccionada y la escuela recuperada
-        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
+        // Asignar Juez con categoría NULL (se define después en Asignación Jueces)
+        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', null);
     }
     
     elseif ($nuevoRol == 'entrenador') {
@@ -51,13 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     elseif ($nuevoRol == 'ambos') {
-        // Asignar ambos roles
+        // Asignar ambos roles. Juez inicia sin categoría asignada.
         ModeloAdmin::asignarRolEntrenador($idUsuario, $escuela);
-        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
+        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', null);
     }
 
     $mensaje = "Rol actualizado correctamente a: " . ucfirst($nuevoRol);
     header("Location: ../views/dashboards/adminDashboard.php?msg=" . urlencode($mensaje));
     exit;
 }
-?>s
+?>

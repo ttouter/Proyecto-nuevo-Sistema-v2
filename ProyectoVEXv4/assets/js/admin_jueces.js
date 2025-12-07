@@ -12,8 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const nombreCat = this.options[this.selectedIndex].text;
             
             if(idCat) {
+                // Actualizar título visual
                 labelCategoria.textContent = nombreCat;
+                
+                // Limpiar listas INMEDIATAMENTE para dar feedback visual y evitar clicks erróneos
+                containerDisponibles.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+                containerAsignados.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+
+                // Cargar datos frescos
                 cargarListas(idCat);
+                
                 document.getElementById('panelGestionJueces').style.display = 'flex';
             } else {
                 document.getElementById('panelGestionJueces').style.display = 'none';
@@ -21,23 +29,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 2. Función para cargar datos de la API
+    // 2. Función para cargar datos de la API (CON ANTI-CACHE AGRESIVO)
     function cargarListas(idCat) {
-        containerDisponibles.innerHTML = '<div class="loading">Cargando...</div>';
-        containerAsignados.innerHTML = '<div class="loading">Cargando...</div>';
+        // Usamos timestamp para forzar al navegador a pedir datos nuevos siempre
+        const timestamp = new Date().getTime();
 
-        fetch(`../../controllers/api_jueces_categoria.php?cat=${idCat}`)
+        fetch(`../../controllers/api_jueces_categoria.php?cat=${idCat}&_t=${timestamp}`)
             .then(response => response.json())
             .then(data => {
-                renderizarLista(data.disponibles, containerDisponibles, 'asignar', idCat);
-                renderizarLista(data.asignados, containerAsignados, 'liberar', idCat);
+                // Renderizar ambas columnas
+                renderizarLista(data.disponibles, containerDisponibles, 'asignar');
+                renderizarLista(data.asignados, containerAsignados, 'liberar');
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                containerDisponibles.innerHTML = '<div class="empty-msg text-danger">Error de conexión</div>';
+                containerAsignados.innerHTML = '<div class="empty-msg text-danger">Error de conexión</div>';
+            });
     }
 
     // 3. Función para dibujar las tarjetas de jueces
-    function renderizarLista(lista, contenedor, accion, idCatActual) {
-        contenedor.innerHTML = ''; // Limpiar
+    function renderizarLista(lista, contenedor, accion) {
+        contenedor.innerHTML = ''; // Limpiar loader
 
         if (lista.length === 0) {
             contenedor.innerHTML = '<div class="empty-msg">No hay jueces en esta lista.</div>';
@@ -53,29 +66,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? '<i class="fas fa-arrow-right"></i>' 
                 : '<i class="fas fa-arrow-left"></i>';
             
-            const btnHtml = accion === 'asignar'
-                ? `<button class="btn-move btn-add" title="Asignar a categoría">${icon}</button>`
-                : `<button class="btn-move btn-remove" title="Quitar de categoría">${icon}</button>`;
+            // Textos y clases para el botón
+            const btnClass = accion === 'asignar' ? 'btn-add' : 'btn-remove';
+            const btnTitle = accion === 'asignar' ? 'Asignar a esta categoría' : 'Quitar de esta categoría';
 
             card.innerHTML = `
                 <div class="juez-info">
                     <strong>${juez.nombre} ${juez.apellidoPat}</strong>
                     <small>${juez.nombreEscuela || 'Sin escuela'}</small>
                 </div>
-                ${btnHtml}
+                <button class="btn-move ${btnClass}" title="${btnTitle}">
+                    ${icon}
+                </button>
             `;
 
-            // Click en la tarjeta o botón para mover
-            card.querySelector('.btn-move').addEventListener('click', () => {
-                moverJuez(juez.idJuez, accion, idCatActual);
-            });
+            // Asignar evento click
+            const btn = card.querySelector('.btn-move');
+            btn.onclick = function() {
+                
+                // --- VALIDACIÓN DE LÍMITE (FRONTEND) ---
+                if (accion === 'asignar') {
+                    // Contamos cuántas tarjetas existen en el contenedor de asignados
+                    const numAsignados = containerAsignados.querySelectorAll('.juez-card').length;
+                    
+                    if (numAsignados >= 3) {
+                        const alertBox = document.getElementById('alertBoxError');
+                        const alertText = document.getElementById('alertTextError');
+                        const msg = 'Error: Solo se permiten 3 jueces por categoría.';
+
+                        if (alertBox && alertText) {
+                            alertText.innerText = msg;
+                            alertBox.style.display = 'block';
+                            setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
+                        } else {
+                            alert(msg);
+                        }
+                        return; // DETIENE LA EJECUCIÓN
+                    }
+                }
+
+                // Deshabilitar botón visualmente para evitar doble click
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // NOTA: Leemos el ID de la categoría directamente del SELECT para asegurar
+                // que estamos asignando a la categoría que el usuario está viendo actualmente.
+                const currentCatId = selectCat.value;
+                
+                moverJuez(juez.idJuez, accion, currentCatId, this);
+            };
 
             contenedor.appendChild(card);
         });
     }
 
     // 4. Función para mover jueces (AJAX)
-    function moverJuez(idJuez, accion, idCategoria) {
+    function moverJuez(idJuez, accion, idCategoria, btnElement) {
         fetch('../../controllers/control_cambiar_cat_juez.php', {
             method: 'POST',
             headers: {
@@ -90,11 +136,35 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                // Recargar listas para ver cambios
+                // ÉXITO: Recargar listas inmediatamente para ver el cambio reflejado
                 cargarListas(idCategoria);
             } else {
-                alert('Error al mover el juez');
+                // ERROR: Restaurar el botón a su estado original
+                if(btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = accion === 'asignar' ? '<i class="fas fa-arrow-right"></i>' : '<i class="fas fa-arrow-left"></i>';
+                }
+
+                // MOSTRAR ALERTA FLOTANTE (Estilo Dashboard)
+                const alertBox = document.getElementById('alertBoxError');
+                const alertText = document.getElementById('alertTextError');
+                
+                const msgError = data.msg || 'Error desconocido al mover el juez';
+
+                if (alertBox && alertText) {
+                    alertText.innerText = msgError;
+                    alertBox.style.display = 'block';
+                    // Ocultar alerta automáticamente después de 6 seg
+                    setTimeout(() => { alertBox.style.display = 'none'; }, 6000);
+                } else {
+                    alert(msgError); // Fallback si no existe la alerta flotante
+                }
             }
+        })
+        .catch(err => {
+            console.error(err);
+            if(btnElement) btnElement.disabled = false;
+            alert('Error de conexión al servidor.');
         });
     }
 });

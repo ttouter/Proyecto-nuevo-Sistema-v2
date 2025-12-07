@@ -218,7 +218,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
 
         <div class="work-area">
 
-            <!-- RESUMEN (Restaurado) -->
+            <!-- RESUMEN -->
             <div id="resumen" class="section-view active">
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px;">
                     <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['total_equipos']; ?></h3><p>Equipos</p></div>
@@ -249,7 +249,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- BASE DE DATOS EQUIPOS (Restaurado) -->
+            <!-- BASE DE DATOS EQUIPOS -->
             <div id="all-teams" class="section-view">
                 <div class="filter-bar">
                     <i class="fas fa-filter" style="color:var(--sidebar-bg);"></i>
@@ -297,7 +297,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- GESTIÓN DE EVENTOS (Restaurado) -->
+            <!-- GESTIÓN DE EVENTOS -->
             <div id="eventos" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Crear Nuevo Evento</div>
@@ -326,7 +326,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- ESCUELAS (Restaurado) -->
+            <!-- ESCUELAS -->
             <div id="escuelas" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Registrar Institución</div>
@@ -356,7 +356,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- ASIGNACIÓN JUECES (ACTUALIZADO CON LA NUEVA LÓGICA DE LISTAS) -->
+            <!-- ASIGNACIÓN JUECES -->
             <div id="asignacion" class="section-view">
                 <div class="content-card">
                     <div class="card-title"><i class="fas fa-gavel"></i> Gestión de Jueces por Categoría</div>
@@ -400,7 +400,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- USUARIOS (Restaurado) -->
+            <!-- USUARIOS -->
             <div id="usuarios" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Gestión de Usuarios</div>
@@ -430,7 +430,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                                     // Columna Juez
                                     $colJuez = '<span class="text-muted">No participa</span>';
                                     if ($rol == 'Juez' || $rol == 'Ambos') {
-                                        $cat = !empty($u['cat_juez']) ? $u['cat_juez'] : 'Asignado';
+                                        $cat = !empty($u['cat_juez']) ? $u['cat_juez'] : 'Sin Asignar';
                                         $colJuez = '<div style="color:#721c24;"><i class="fas fa-gavel"></i> ' . $cat . '</div>';
                                     }
                                 ?>
@@ -451,7 +451,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         </div>
     </div>
 
-    <!-- MODAL EDITAR USUARIO (MODIFICADO: Sin Escuela) -->
+    <!-- MODAL EDITAR USUARIO (MODIFICADO: Sin Categoría de Juez) -->
     <div id="modalEditarUsuario" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal()">&times;</span>
@@ -461,26 +461,18 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 <input type="hidden" name="idUsuario" id="idUsuarioModal">
                 
                 <label>Nuevo Rol:</label>
-                <select name="nuevoRol" id="nuevoRolSelect" class="form-control" onchange="toggleCategoriaSelect()">
+                <select name="nuevoRol" id="nuevoRolSelect" class="form-control">
                     <option value="entrenador">Entrenador</option>
                     <option value="juez">Juez</option>
                     <option value="ambos">Ambos</option>
                 </select>
 
-                <!-- Select de Categoría (Solo visible para Juez/Ambos) -->
-                <div id="divCategoriaModal" style="display:none;">
-                    <label>Categoría para Juez:</label>
-                    <select name="categoriaModal" class="form-control">
-                        <option value="">-- Selecciona Categoría --</option>
-                        <?php foreach ($listaCategorias as $cat): ?>
-                            <option value="<?php echo $cat['idCategoria']; ?>"><?php echo htmlspecialchars($cat['nombre']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Campo de Escuela ELIMINADO según solicitud -->
+                <!-- El selector de Categoría ha sido ELIMINADO para Juez -->
+                <p style="font-size:0.85rem; color:#666; margin-top:10px;">
+                    <i class="fas fa-info-circle"></i> Nota: Si seleccionas "Juez", podrás asignar su categoría específica en la sección de <strong>"Asignación Jueces"</strong>.
+                </p>
                 
-                <button type="submit" class="btn-action" style="width:100%; margin-top:10px;">Guardar Cambios</button>
+                <button type="submit" class="btn-action" style="width:100%; margin-top:15px;">Guardar Cambios</button>
             </form>
         </div>
     </div>
@@ -540,21 +532,10 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             document.getElementById('idUsuarioModal').value=id;
             document.getElementById('nombreUsuarioModal').innerText=nombre;
             document.getElementById('modalEditarUsuario').style.display='flex';
-            toggleCategoriaSelect(); // Verificar estado inicial
         }
         
         function cerrarModal() { document.getElementById('modalEditarUsuario').style.display='none'; }
         
-        function toggleCategoriaSelect() {
-            const rol = document.getElementById('nuevoRolSelect').value;
-            const divCat = document.getElementById('divCategoriaModal');
-            if(rol === 'juez' || rol === 'ambos') {
-                divCat.style.display = 'block';
-            } else {
-                divCat.style.display = 'none';
-            }
-        }
-
         window.onclick = function(e) { if(e.target == document.getElementById('modalEditarUsuario')) cerrarModal(); }
     </script>
     
