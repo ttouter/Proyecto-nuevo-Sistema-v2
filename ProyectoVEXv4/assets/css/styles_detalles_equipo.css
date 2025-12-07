@@ -1,0 +1,127 @@
+/* --- LAYOUT OVERRIDES (Para cambiar de Sidebar a Topbar) --- */
+body { 
+    display: block !important; /* Quitamos el flex del dashboard */
+    height: auto !important; 
+    overflow-y: auto !important; 
+    background-color: #f4f7f6;
+}
+
+/* Ocultamos la sidebar original si se cargó por CSS heredado */
+.sidebar { display: none !important; }
+
+/* --- NUEVA BARRA DE NAVEGACIÓN SUPERIOR --- */
+.navbar-top {
+    background-color: #2C2C54;
+    color: white;
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #FDF5A3; /* Acento amarillo */
+}
+
+.nav-actions {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    padding: 8px 15px;
+    border-radius: 6px;
+}
+
+.nav-link:hover {
+    color: white;
+    background: rgba(255,255,255,0.1);
+}
+
+.btn-logout {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff6b6b;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.btn-logout:hover {
+    background: #c0392b;
+    color: white;
+    border-color: #c0392b;
+}
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.container { 
+    max-width: 1100px; 
+    margin: 40px auto; 
+    padding: 0 20px; 
+    animation: fadeIn 0.5s ease-out; 
+}
+
+/* --- TARJETA PRINCIPAL (HERO) --- */
+.hero-card {
+    background: white; border-radius: 16px; padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 30px;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+.hero-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%;
+    background: linear-gradient(to bottom, #2C2C54, #40407A);
+}
+
+.team-info h1 { font-size: 2.2rem; color: #2C2C54; margin: 0 0 8px 0; font-weight: 800; }
+.team-info .school { color: #666; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+
+.meta-badge { 
+    display: inline-block; padding: 6px 14px; border-radius: 50px; 
+    font-weight: bold; font-size: 0.85rem; margin-left: 10px;
+}
+.badge-cat { background: #e8eaf6; color: #3f51b5; }
+.badge-active { background: #e0f2f1; color: #00897b; }
+
+/* --- GRID Y SECCIONES --- */
+.content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+@media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+
+.section-box { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 20px; }
+
+/* --- TARJETAS DE MIEMBROS --- */
+.member-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 15px; border-radius: 8px; border: 1px solid #f0f0f0; margin-bottom: 10px;
+    transition: 0.2s;
+}
+.member-card:hover { border-color: #40407A; background: #fafafa; }
+
+.member-avatar { 
+    width: 40px; height: 40px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; color: white; margin-right: 15px; font-size: 1rem;
+}
+
+/* --- PUNTAJES --- */
+.score-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; }
+.score-row:last-child { border: none; }
+
+/* --- ANIMACIONES --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

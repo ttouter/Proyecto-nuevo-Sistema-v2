@@ -23,6 +23,9 @@ $eventos = ModeloProcesos::listarEventos();
     <meta charset="UTF-8">
     <title>Panel de Entrenador - VEX Control</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Reutilizamos tus estilos existentes -->
+    <link rel="stylesheet" href="../../assets/css/styles_asistenteDashboard.css">
+    
     <style>
         :root { --primary: #2C2C54; --accent: #FDF5A3; --text: #333; --bg: #f4f4f9; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -66,10 +69,11 @@ $eventos = ModeloProcesos::listarEventos();
         .judges-box strong { display: block; margin-bottom: 5px; color: var(--primary); }
 
         .card-actions { margin-top: auto; display: flex; gap: 10px; }
-        .btn-small { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: 0.2s; }
+        .btn-small { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: 0.2s; text-decoration: none; text-align: center; }
         .btn-add { background: #d4edda; color: #155724; }
         .btn-view { background: #e2e3e5; color: #383d41; }
         .btn-add:hover { background: #c3e6cb; }
+        .btn-view:hover { background: #d3d4d6; }
 
         /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
@@ -131,9 +135,11 @@ $eventos = ModeloProcesos::listarEventos();
                         </div>
 
                         <div class="card-actions">
-                            <button class="btn-small btn-view" onclick="alert('Funcionalidad de ver detalles y puntajes completos en construcción.')">
+                            <!-- BOTÓN MODIFICADO PARA IR A DETALLES -->
+                            <a href="detallesEquipo.php?id=<?php echo $eq['idEquipo']; ?>" class="btn-small btn-view">
                                 <i class="fas fa-eye"></i> Detalles
-                            </button>
+                            </a>
+                            
                             <button class="btn-small btn-add" 
                                 onclick="openAddMember(
                                     <?php echo $eq['idEquipo']; ?>, 
@@ -150,6 +156,7 @@ $eventos = ModeloProcesos::listarEventos();
         </div>
     </main>
 
+    <!-- MODAL NUEVO EQUIPO -->
     <div id="modalEquipo" class="modal">
         <div class="modal-content">
             <h2 style="margin-top:0;">Registrar Nuevo Equipo</h2>
@@ -187,6 +194,7 @@ $eventos = ModeloProcesos::listarEventos();
         </div>
     </div>
 
+    <!-- MODAL NUEVO INTEGRANTE -->
     <div id="modalMember" class="modal">
         <div class="modal-content">
             <h2 style="margin-top:0;">Agregar a <span id="spanTeamName"></span></h2>
@@ -243,24 +251,16 @@ $eventos = ModeloProcesos::listarEventos();
         let currentMinAge = 0;
         let currentMaxAge = 99;
 
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         // Abrir modal de integrante y configurar reglas
         function openAddMember(idEquipo, nombreEquipo, minAge, maxAge) {
             document.getElementById('inputTeamId').value = idEquipo;
             document.getElementById('spanTeamName').innerText = nombreEquipo;
             document.getElementById('spanAgeRange').innerText = minAge + ' - ' + maxAge;
-            
-            // Guardar reglas
             currentMinAge = minAge;
             currentMaxAge = maxAge;
-
             openModal('modalMember');
         }
 
