@@ -13,17 +13,56 @@ CREATE PROCEDURE AltaAsistente(
     IN p_sexo ENUM('Hombre','Mujer'),
     IN p_email VARCHAR(100),
     IN p_password VARCHAR(255),
+    IN p_codEscuela VARCHAR(50), -- 1. Nuevo parámetro agregado (el 8vo argumento)
     OUT mensaje VARCHAR(100)
 )
 BEGIN
+    DECLARE v_idAsistente INT;
+
+    -- Validar si el correo ya existe
     IF EXISTS (SELECT 1 FROM Asistente WHERE email = p_email) THEN
         SET mensaje = 'El correo ya está registrado.';
     ELSE
+        -- 2. Insertar en la tabla base Asistente
         INSERT INTO Asistente (nombre, apellidoPat, apellidoMat, sexo, email, password)
         VALUES (p_nombre, p_apellidoPat, p_apellidoMat, p_sexo, p_email, p_password);
+        
+        -- Obtener el ID generado automáticamente
+        SET v_idAsistente = LAST_INSERT_ID();
+
+        -- 3. Insertar automáticamente en la tabla Entrenador con la Escuela
+        -- (Esto evita que se pierda el dato de la escuela seleccionada)
+        INSERT INTO Entrenador (idEntrenador, idAsistente_Asistente, codEscuela_EscuelaProcedencia)
+        VALUES (v_idAsistente, v_idAsistente, p_codEscuela);
+
         SET mensaje = 'Registro exitoso';
     END IF;
 END //
+
+CREATE PROCEDURE ObtenerDashboardEntrenador(IN p_idAsistente INT)
+BEGIN
+    -- 1. Primer conjunto de resultados: Datos de la Escuela del Entrenador
+    SELECT ep.codEscuela as escuela_id, ep.nombreEscuela as nombre_escuela
+    FROM Entrenador ent
+    JOIN EscuelaProcedencia ep ON ent.codEscuela_EscuelaProcedencia = ep.codEscuela
+    WHERE ent.idAsistente_Asistente = p_idAsistente;
+
+    -- 2. Segundo conjunto de resultados: Lista de Equipos de este Entrenador
+    SELECT 
+        e.idEquipo, 
+        e.nombreEquipo, 
+        c.nombre as categoria, 
+        c.rangoMin,
+        c.rangoMax,
+        ev.nombre as nombre_Evento,
+        (SELECT COUNT(*) FROM Participante p WHERE p.idEquipo_Equipo = e.idEquipo) as num_integrantes,
+        (SELECT COUNT(*) FROM Juez_Evaluacion_Equipo jee WHERE jee.idEquipo = e.idEquipo) as jueces_asignados
+    FROM Equipo e
+    JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
+    LEFT JOIN Evento ev ON e.nombre_Evento = ev.nombre
+    WHERE e.idAsistente = p_idAsistente;
+END //
+
 
 DROP PROCEDURE IF EXISTS SP_InicioSesion_Asistente //
 CREATE PROCEDURE SP_InicioSesion_Asistente(IN p_email VARCHAR(100))
@@ -247,8 +286,14 @@ END //
 DROP PROCEDURE IF EXISTS ObtenerResumenAdmin //
 CREATE PROCEDURE ObtenerResumenAdmin()
 BEGIN
-    SELECT (SELECT COUNT(*) FROM Equipo) as total_equipos, (SELECT COUNT(*) FROM Juez) as total_jueces, (SELECT COUNT(*) FROM Participante) as total_participantes;
+    SELECT 
+        (SELECT COUNT(*) FROM Equipo) as total_equipos, 
+        -- Agregamos la columna faltante 'eventos_activos'
+        (SELECT COUNT(*) FROM Evento WHERE fecha >= CURDATE()) as eventos_activos,
+        (SELECT COUNT(*) FROM Juez) as total_jueces, 
+        (SELECT COUNT(*) FROM Participante) as total_participantes;
 END //
+
 
 DROP PROCEDURE IF EXISTS ListarEquiposAdmin //
 CREATE PROCEDURE ListarEquiposAdmin()
