@@ -43,6 +43,24 @@ class ModeloAdmin {
         } catch (PDOException $e) { return []; }
     }
 
+    // --- NUEVA FUNCIÓN PARA RECUPERAR ESCUELA ---
+    // Esta función permite obtener la escuela del usuario actual si no se envía en el formulario
+    public static function obtenerEscuelaUsuario($id) {
+        global $pdo;
+        try {
+            // Intentar buscar en Entrenador primero (todos se crean como Entrenador al registrarse)
+            $stmt = $pdo->prepare("SELECT codEscuela_EscuelaProcedencia FROM Entrenador WHERE idAsistente_Asistente = ?");
+            $stmt->execute([$id]);
+            $res = $stmt->fetchColumn();
+            if($res) return $res;
+            
+            // Si no está en Entrenador, buscar en Juez
+            $stmt = $pdo->prepare("SELECT codEscuela_EscuelaProcedencia FROM Juez WHERE idAsistente_Asistente = ?");
+            $stmt->execute([$id]);
+            return $stmt->fetchColumn();
+        } catch(Exception $e) { return null; }
+    }
+
     // --- FUNCIONES CORREGIDAS PARA ACTUALIZAR ROLES ---
 
     public static function asignarRolEntrenador($id, $cod) { 

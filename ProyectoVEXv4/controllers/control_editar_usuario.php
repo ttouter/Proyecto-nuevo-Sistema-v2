@@ -5,8 +5,21 @@ require_once '../models/ModeloAdmin.php';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $idUsuario = $_POST['idUsuario'];
     $nuevoRol  = $_POST['nuevoRol'];
-    $escuela   = $_POST['escuelaModal'];
+    $escuela   = isset($_POST['escuelaModal']) ? $_POST['escuelaModal'] : '';
     $categoria = $_POST['categoriaModal']; // Recibimos la categoría seleccionada
+
+    // LOGICA ACTUALIZADA: Si no se envió escuela en el formulario (porque se eliminó el campo),
+    // buscamos la escuela actual del usuario para no romper la integridad de datos.
+    if (empty($escuela)) {
+        $escuelaActual = ModeloAdmin::obtenerEscuelaUsuario($idUsuario);
+        if ($escuelaActual) {
+            $escuela = $escuelaActual;
+        } else {
+            // Fallback en caso extremo de que no tenga escuela (raro)
+            header("Location: ../views/dashboards/adminDashboard.php?error=" . urlencode("Error Crítico: No se pudo determinar la escuela del usuario."));
+            exit;
+        }
+    }
 
     // Validación básica: Si es Juez o Ambos, la categoría es obligatoria
     if (($nuevoRol == 'juez' || $nuevoRol == 'ambos') && empty($categoria)) {
@@ -28,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($nuevoRol == 'juez') {
         ModeloAdmin::quitarRolEntrenador($idUsuario);
-        // Asignar Juez con la categoría seleccionada
+        // Asignar Juez con la categoría seleccionada y la escuela recuperada
         ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
     }
     
@@ -47,4 +60,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     header("Location: ../views/dashboards/adminDashboard.php?msg=" . urlencode($mensaje));
     exit;
 }
-?>
+?>s

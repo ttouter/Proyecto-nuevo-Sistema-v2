@@ -451,7 +451,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         </div>
     </div>
 
-    <!-- MODAL EDITAR USUARIO (Restaurado) -->
+    <!-- MODAL EDITAR USUARIO (MODIFICADO: Sin Escuela) -->
     <div id="modalEditarUsuario" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal()">&times;</span>
@@ -478,12 +478,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                     </select>
                 </div>
 
-                <label>Escuela (Procedencia):</label>
-                <select name="escuelaModal" class="form-control">
-                     <?php foreach ($listaEscuelas as $esc): ?>
-                        <option value="<?php echo $esc['codEscuela']; ?>"><?php echo htmlspecialchars($esc['nombreEscuela']); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <!-- Campo de Escuela ELIMINADO según solicitud -->
                 
                 <button type="submit" class="btn-action" style="width:100%; margin-top:10px;">Guardar Cambios</button>
             </form>
