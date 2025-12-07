@@ -106,6 +106,86 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* --- NUEVOS ESTILOS PARA GESTIÓN DE JUECES (LISTAS DOBLES) --- */
+        .jueces-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            height: 450px; /* Altura fija para scroll */
+        }
+
+        .jueces-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        .col-header {
+            padding: 15px;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .col-header.available { background: #7f8c8d; } /* Gris Profesional */
+        .col-header.assigned { background: #2C2C54; } /* Azul VEX */
+
+        .jueces-list {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .juez-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+            border: 1px solid #eee;
+        }
+
+        .juez-card:hover { transform: translateX(3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card-disp { border-left: 4px solid #27ae60; }
+        .card-asig { border-left: 4px solid #c0392b; }
+
+        .juez-info strong { display: block; color: #333; font-size: 0.95rem; }
+        .juez-info small { color: #777; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+
+        .btn-move {
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-add { background: #27ae60; }
+        .btn-add:hover { background: #219150; transform: scale(1.1); }
+        .btn-remove { background: #c0392b; }
+        .btn-remove:hover { background: #a93226; transform: scale(1.1); }
+        
+        .loading, .empty-msg { text-align: center; padding: 30px; color: #999; font-style: italic; }
     </style>
 </head>
 <body>
@@ -138,7 +218,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
 
         <div class="work-area">
 
-            <!-- RESUMEN -->
+            <!-- RESUMEN (Restaurado) -->
             <div id="resumen" class="section-view active">
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px;">
                     <div class="content-card" style="text-align:center;"><h3><?php echo $resumen['total_equipos']; ?></h3><p>Equipos</p></div>
@@ -169,7 +249,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- BASE DE DATOS EQUIPOS -->
+            <!-- BASE DE DATOS EQUIPOS (Restaurado) -->
             <div id="all-teams" class="section-view">
                 <div class="filter-bar">
                     <i class="fas fa-filter" style="color:var(--sidebar-bg);"></i>
@@ -217,7 +297,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- GESTIÓN DE EVENTOS -->
+            <!-- GESTIÓN DE EVENTOS (Restaurado) -->
             <div id="eventos" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Crear Nuevo Evento</div>
@@ -246,7 +326,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- ESCUELAS -->
+            <!-- ESCUELAS (Restaurado) -->
             <div id="escuelas" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Registrar Institución</div>
@@ -276,27 +356,51 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- ASIGNACIÓN JUECES -->
+            <!-- ASIGNACIÓN JUECES (ACTUALIZADO CON LA NUEVA LÓGICA DE LISTAS) -->
             <div id="asignacion" class="section-view">
                 <div class="content-card">
-                    <div class="card-title">Asignar Jueces</div>
-                    <form action="../../controllers/control_asignar_jueces.php" method="POST">
-                        <select name="idCategoria" class="form-control" onchange="cargarJuecesValidos(this.value)">
-                            <option value="">-- Selecciona Categoría --</option>
+                    <div class="card-title"><i class="fas fa-gavel"></i> Gestión de Jueces por Categoría</div>
+                    <p class="text-muted" style="margin-bottom: 25px;">Selecciona una categoría para administrar su panel de jueces. Podrás mover jueces disponibles a la categoría seleccionada y viceversa.</p>
+                    
+                    <!-- 1. SELECTOR DE CATEGORÍA -->
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                        <label style="font-weight:bold; display:block; margin-bottom:8px;">Seleccionar Categoría:</label>
+                        <select id="selectCategoriaJuez" class="form-control" style="max-width: 400px;">
+                            <option value="">-- Selecciona una Categoría --</option>
                             <?php foreach($listaCategorias as $cat): ?>
                                 <option value="<?php echo $cat['idCategoria']; ?>"><?php echo htmlspecialchars($cat['nombre']); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div id="areaJueces" style="margin-top:20px; display:none;">
-                            <label>Selecciona Jueces (Máx 3):</label>
-                            <div id="listaJuecesCheckboxes" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;"></div>
-                            <button type="submit" class="btn-action">Asignar</button>
+                    </div>
+
+                    <!-- 2. PANELES DE GESTIÓN (Oculto hasta seleccionar) -->
+                    <div id="panelGestionJueces" class="jueces-container" style="display: none;">
+                        
+                        <!-- COLUMNA IZQUIERDA: DISPONIBLES -->
+                        <div class="jueces-col">
+                            <div class="col-header available">
+                                <i class="fas fa-users"></i> Jueces Disponibles (Sin Asignar)
+                            </div>
+                            <div id="listaDisponibles" class="jueces-list">
+                                <!-- Se llena con JS -->
+                            </div>
                         </div>
-                    </form>
+
+                        <!-- COLUMNA DERECHA: ASIGNADOS -->
+                        <div class="jueces-col">
+                            <div class="col-header assigned">
+                                <i class="fas fa-gavel"></i> Jueces en: <span id="labelCategoriaSeleccionada" style="margin-left:5px; text-decoration: underline;">...</span>
+                            </div>
+                            <div id="listaAsignados" class="jueces-list">
+                                <!-- Se llena con JS -->
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
-            <!-- USUARIOS -->
+            <!-- USUARIOS (Restaurado) -->
             <div id="usuarios" class="section-view">
                 <div class="content-card">
                     <div class="card-title">Gestión de Usuarios</div>
@@ -347,7 +451,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         </div>
     </div>
 
-    <!-- MODAL EDITAR USUARIO -->
+    <!-- MODAL EDITAR USUARIO (Restaurado) -->
     <div id="modalEditarUsuario" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal()">&times;</span>
@@ -436,18 +540,6 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             });
             document.getElementById('contadorEquipos').innerText = 'Mostrando ' + visibles + ' equipos';
         }
-
-        function cargarJuecesValidos(cat) {
-            if(!cat) { document.getElementById('areaJueces').style.display='none'; return; }
-            fetch('../../controllers/api_jueces_validos.php?cat='+cat)
-                .then(r=>r.json())
-                .then(d=>{
-                    const c=document.getElementById('listaJuecesCheckboxes'); c.innerHTML='';
-                    if(d.length===0) c.innerHTML='<p style="color:red">No hay jueces disponibles.</p>';
-                    else d.forEach(j=>{c.innerHTML+=`<div><input type="checkbox" name="jueces[]" value="${j.idJuez}"> <strong>${j.nombre_completo}</strong><br><small>${j.nombreEscuela}</small></div>`;});
-                    document.getElementById('areaJueces').style.display='block';
-                });
-        }
         
         function abrirModalEditar(id, nombre) {
             document.getElementById('idUsuarioModal').value=id;
@@ -470,5 +562,8 @@ $listaCategorias = ModeloProcesos::listarCategorias();
 
         window.onclick = function(e) { if(e.target == document.getElementById('modalEditarUsuario')) cerrarModal(); }
     </script>
+    
+    <!-- SCRIPT DE LOS JUECES -->
+    <script src="../../assets/js/admin_jueces.js"></script>
 </body>
 </html>
