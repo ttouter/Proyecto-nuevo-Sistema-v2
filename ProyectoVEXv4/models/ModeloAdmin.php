@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class ModeloAdmin {
 
-    // 1. Resumen (Ahora usa SP)
+    // 1. Resumen (Usa SP)
     public static function obtenerResumen() {
         global $pdo;
         try {
@@ -13,7 +13,7 @@ class ModeloAdmin {
         } catch (PDOException $e) { return null; }
     }
 
-    // 2. Listar Usuarios (Ahora usa SP)
+    // 2. Listar Usuarios (Usa SP)
     public static function listarUsuarios() {
         global $pdo;
         try {
@@ -23,7 +23,7 @@ class ModeloAdmin {
         } catch (PDOException $e) { return []; }
     }
 
-    // 3. Listar Equipos Resumen (Ahora usa SP)
+    // 3. Listar Equipos Resumen (Usa SP)
     public static function listarEquipos() {
         global $pdo;
         try {
@@ -43,7 +43,52 @@ class ModeloAdmin {
         } catch (PDOException $e) { return []; }
     }
 
-    // --- EL RESTO YA USABA SPs, PERO REVISAMOS ---
+    // --- FUNCIONES CORREGIDAS PARA ACTUALIZAR ROLES ---
+
+    public static function asignarRolEntrenador($id, $cod) { 
+        global $pdo; 
+        try { 
+            // Permite actualizar la escuela si ya existe
+            $sql = "INSERT INTO Entrenador (idEntrenador, idAsistente_Asistente, codEscuela_EscuelaProcedencia) 
+                    VALUES (?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE codEscuela_EscuelaProcedencia = VALUES(codEscuela_EscuelaProcedencia)";
+            
+            $pdo->prepare($sql)->execute([$id, $id, $cod]); 
+        } catch(Exception $e) {} 
+    }
+
+    // ACTUALIZADA: Ahora recibe $cat (Categoría)
+    public static function asignarRolJuez($id, $cod, $gr, $cat) { 
+        global $pdo; 
+        try { 
+            // Se agrega idCategoria al INSERT y al UPDATE
+            $sql = "INSERT INTO Juez (idJuez, idAsistente_Asistente, codEscuela_EscuelaProcedencia, gradoEstudios, idCategoria) 
+                    VALUES (?, ?, ?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE 
+                        codEscuela_EscuelaProcedencia = VALUES(codEscuela_EscuelaProcedencia),
+                        gradoEstudios = VALUES(gradoEstudios),
+                        idCategoria = VALUES(idCategoria)"; 
+            
+            $pdo->prepare($sql)->execute([$id, $id, $cod, $gr, $cat]); 
+        } catch(Exception $e) {} 
+    }
+    
+    // --- FUNCIONES PARA LIMPIAR ROLES ---
+    public static function quitarRolEntrenador($id) {
+        global $pdo; 
+        try {
+            $pdo->prepare("DELETE FROM Entrenador WHERE idAsistente_Asistente = ?")->execute([$id]);
+        } catch(Exception $e) {}
+    }
+
+    public static function quitarRolJuez($id) {
+        global $pdo; 
+        try {
+            $pdo->prepare("DELETE FROM Juez WHERE idAsistente_Asistente = ?")->execute([$id]);
+        } catch(Exception $e) {}
+    }
+
+    // --- OTRAS FUNCIONES ---
 
     public static function crearEvento($nombre, $lugar, $fecha) {
         global $pdo; try { 
@@ -71,32 +116,6 @@ class ModeloAdmin {
             return "Error: " . $e->getMessage(); 
         }
     }
-
-    public static function asignarRolEntrenador($id, $cod) { 
-        global $pdo; try{ 
-            $pdo->prepare("INSERT IGNORE INTO Entrenador (idAsistente_Asistente, codEscuela_EscuelaProcedencia) VALUES (?,?)")->execute([$id,$cod]); 
-        }catch(Exception $e){} 
-    }
-
-    public static function asignarRolJuez($id, $cod, $gr) { 
-        global $pdo; try{ 
-            $pdo->prepare("INSERT IGNORE INTO Juez (idAsistente_Asistente, codEscuela_EscuelaProcedencia, gradoEstudios) VALUES (?,?,?)")->execute([$id,$cod,$gr]); 
-        }catch(Exception $e){} 
-    }
-    
-    // --- NUEVAS FUNCIONES PARA LIMPIAR ROLES ---
-    public static function quitarRolEntrenador($id) {
-        global $pdo; try {
-            $pdo->prepare("DELETE FROM Entrenador WHERE idAsistente_Asistente = ?")->execute([$id]);
-        } catch(Exception $e) {}
-    }
-
-    public static function quitarRolJuez($id) {
-        global $pdo; try {
-            $pdo->prepare("DELETE FROM Juez WHERE idAsistente_Asistente = ?")->execute([$id]);
-        } catch(Exception $e) {}
-    }
-    // -------------------------------------------
     
     public static function obtenerJuecesValidos($cat) { 
         global $pdo; try{ 

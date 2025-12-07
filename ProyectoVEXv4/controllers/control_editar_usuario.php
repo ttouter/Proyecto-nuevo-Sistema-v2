@@ -6,27 +6,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $idUsuario = $_POST['idUsuario'];
     $nuevoRol  = $_POST['nuevoRol'];
     $escuela   = $_POST['escuelaModal'];
+    $categoria = $_POST['categoriaModal']; // Nuevo campo recibido
 
-    // Lógica Correcta: Limpiar roles antes de asignar
-    
+    // Si no seleccionó categoría (ej. para entrenador), ponemos null o manejamos error
+    if($nuevoRol == 'juez' && empty($categoria)) {
+        // Podrías forzar un error aquí si es obligatorio
+    }
+
     if ($nuevoRol == 'juez') {
-        // 1. Quitar rol contrario
         ModeloAdmin::quitarRolEntrenador($idUsuario);
-        // 2. Asignar nuevo rol
-        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura');
+        // Pasamos la categoría al crear/editar el juez
+        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
     }
     
     elseif ($nuevoRol == 'entrenador') {
-        // 1. Quitar rol contrario
         ModeloAdmin::quitarRolJuez($idUsuario);
-        // 2. Asignar nuevo rol
         ModeloAdmin::asignarRolEntrenador($idUsuario, $escuela);
     }
     
     elseif ($nuevoRol == 'ambos') {
-        // Asegurar que tenga ambos registros
         ModeloAdmin::asignarRolEntrenador($idUsuario, $escuela);
-        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura');
+        // Pasamos la categoría también aquí
+        ModeloAdmin::asignarRolJuez($idUsuario, $escuela, 'Licenciatura', $categoria);
     }
 
     $mensaje = "Rol actualizado correctamente a: " . ucfirst($nuevoRol);

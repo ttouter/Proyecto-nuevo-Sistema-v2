@@ -186,6 +186,10 @@ create table if not exists EvaluacionConstruccion (
     foreign key (idEquipo) references Equipo(idEquipo)
 );
 
+-- 1. Agregar la columna idCategoria a la tabla Juez
+-- Si da error de "Duplicate column name", es que ya la tienes, puedes ignorarlo.
+ALTER TABLE Juez ADD COLUMN idCategoria INT;
+ALTER TABLE Juez ADD CONSTRAINT fk_juez_cat FOREIGN KEY (idCategoria) REFERENCES Categoria(idCategoria);
 
 insert into Categoria (idCategoria, nombre, rangoMin, rangoMax) values (1, 'Primaria', 7, 13),
 																	   (2, 'Secundaria', 14, 16),

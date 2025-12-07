@@ -324,16 +324,26 @@ BEGIN
         a.apellidoPat, 
         a.email,
         CASE
-            -- Verificar si existen registros en AMBAS tablas
             WHEN j.idJuez IS NOT NULL AND e.idEntrenador IS NOT NULL THEN 'Ambos'
             WHEN j.idJuez IS NOT NULL THEN 'Juez'
             WHEN e.idEntrenador IS NOT NULL THEN 'Entrenador'
             ELSE 'Asistente'
-        END as rol_detectado
+        END as rol_detectado,
+        
+        -- Categorías de Entrenador (Calculadas por sus equipos registrados)
+        (SELECT GROUP_CONCAT(DISTINCT c.nombre SEPARATOR ', ')
+         FROM Equipo eq
+         JOIN Categoria c ON eq.idCategoria_Categoria = c.idCategoria
+         WHERE eq.idAsistente = a.idAsistente
+        ) as cat_entrenador,
+        
+        -- Categoría de Juez (AHORA ES UN DATO FIJO DE LA TABLA JUEZ)
+        cat_juez.nombre as cat_juez
+        
     FROM Asistente a
     LEFT JOIN Juez j ON a.idAsistente = j.idAsistente_Asistente
+    LEFT JOIN Categoria cat_juez ON j.idCategoria = cat_juez.idCategoria -- Join con la nueva columna
     LEFT JOIN Entrenador e ON a.idAsistente = e.idAsistente_Asistente
-    -- Importante: Agrupar por ID para eliminar duplicados si hay datos sucios
     GROUP BY a.idAsistente; 
 END //
 

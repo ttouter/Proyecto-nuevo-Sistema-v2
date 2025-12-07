@@ -300,7 +300,15 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 <div class="content-card">
                     <div class="card-title">Gestión de Usuarios</div>
                     <table class="vex-table">
-                        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acciones</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Categorías</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <?php foreach($listaUsuarios as $u): ?>
                                 <?php 
@@ -314,6 +322,16 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                                 <td><?php echo htmlspecialchars($u['nombre']); ?></td>
                                 <td><?php echo htmlspecialchars($u['email']); ?></td>
                                 <td><span class="tag <?php echo $rolClass; ?>"><?php echo $u['rol_detectado']; ?></span></td>
+                                <td style="font-size:0.85rem; line-height:1.4;">
+                                    <?php 
+                                        $infoCats = [];
+                                        if(!empty($u['cat_entrenador'])) $infoCats[] = "<div style='color:#155724;'><i class='fas fa-user-tie'></i> " . $u['cat_entrenador'] . "</div>";
+                                        if(!empty($u['cat_juez'])) $infoCats[] = "<div style='color:#721c24;'><i class='fas fa-gavel'></i> " . $u['cat_juez'] . "</div>";
+                                        
+                                        if(empty($infoCats)) echo "<span style='color:#ccc;'>--</span>";
+                                        else echo implode('', $infoCats);
+                                    ?>
+                                </td>
                                 <td>
                                     <button class="btn-warning" onclick="abrirModalEditar(<?php echo $u['idAsistente']; ?>, '<?php echo $u['nombre']; ?>')"><i class="fas fa-edit"></i> Editar</button>
                                 </td>
