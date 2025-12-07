@@ -199,7 +199,8 @@ $msg = isset($_GET['msg']) ? $_GET['msg'] : '';
                     <form action="../../controllers/control_evento.php" method="POST">
                         <input type="text" name="nombreEvento" class="form-control" placeholder="Nombre" required>
                         <input type="text" name="lugarEvento" class="form-control" placeholder="Lugar" required>
-                        <input type="date" name="fechaEvento" class="form-control" required>
+                        <!-- AQUÍ ESTÁ LA CORRECCIÓN: Se agrega min="HOY" -->
+                        <input type="date" name="fechaEvento" class="form-control" min="<?php echo date('Y-m-d'); ?>" required>
                         <button class="btn-action">Guardar Evento</button>
                     </form>
                 </div>
