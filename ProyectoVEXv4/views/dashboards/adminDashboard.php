@@ -72,7 +72,13 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* TEAM CARDS */
-        .filter-bar { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .filter-bar { 
+            background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; 
+            display: flex; align-items: center; gap: 15px; flex-wrap: wrap; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
+        }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+
         .teams-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
         .team-card-interactive {
             background: white; border-radius: 15px; padding: 20px; position: relative; border: 1px solid #eee;
@@ -84,6 +90,17 @@ $listaCategorias = ModeloProcesos::listarCategorias();
         .card-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; background: #eee; color: #555; margin-right: 5px; }
         .badge-cat { background: #e3f2fd; color: #1565c0; }
         .card-stats { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; font-size: 0.9rem; color: #555; }
+
+        /* NO RESULTS MSG */
+        #no-match-msg {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            background: white;
+            border-radius: 10px;
+            display: none;
+        }
 
         /* MODAL */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
@@ -107,7 +124,7 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* --- NUEVOS ESTILOS PARA GESTIÓN DE JUECES (LISTAS DOBLES) --- */
+        /* --- ESTILOS PARA GESTIÓN DE JUECES (LISTAS DOBLES) --- */
         .jueces-container {
             display: flex;
             gap: 30px;
@@ -249,19 +266,37 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 </div>
             </div>
 
-            <!-- BASE DE DATOS EQUIPOS -->
+            <!-- BASE DE DATOS EQUIPOS CON DOBLE FILTRO -->
             <div id="all-teams" class="section-view">
                 <div class="filter-bar">
-                    <i class="fas fa-filter" style="color:var(--sidebar-bg);"></i>
-                    <span style="font-weight:bold;">Filtrar por Escuela:</span>
-                    <select id="schoolFilter" class="form-control" style="width: auto; margin:0;" onchange="filtrarEquipos()">
-                        <option value="all">-- Mostrar Todas --</option>
-                        <?php foreach($listaEscuelas as $esc): ?>
-                            <option value="<?php echo $esc['codEscuela']; ?>">
-                                <?php echo htmlspecialchars($esc['nombreEscuela']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <i class="fas fa-filter" style="color:var(--sidebar-bg); font-size: 1.2rem;"></i>
+                    
+                    <!-- Filtro Escuela -->
+                    <div class="filter-group">
+                        <label>Escuela:</label>
+                        <select id="schoolFilter" class="form-control" style="width: auto; margin:0;" onchange="filtrarEquipos()">
+                            <option value="all">-- Todas --</option>
+                            <?php foreach($listaEscuelas as $esc): ?>
+                                <option value="<?php echo $esc['codEscuela']; ?>">
+                                    <?php echo htmlspecialchars($esc['nombreEscuela']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Evento -->
+                    <div class="filter-group">
+                        <label>Evento:</label>
+                        <select id="eventFilter" class="form-control" style="width: auto; margin:0;" onchange="filtrarEquipos()">
+                            <option value="all">-- Todos --</option>
+                            <?php foreach($listaEventos as $ev): ?>
+                                <option value="<?php echo htmlspecialchars($ev['nombre']); ?>">
+                                    <?php echo htmlspecialchars($ev['nombre']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                     <span id="contadorEquipos" style="margin-left:auto; font-size:0.9rem; color:#777;">
                         Mostrando <?php echo count($listaEquiposCompleta); ?> equipos
                     </span>
@@ -270,7 +305,11 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                 <div class="teams-grid-container" id="gridEquipos">
                     <?php if (!empty($listaEquiposCompleta)): ?>
                         <?php foreach ($listaEquiposCompleta as $eq): ?>
-                            <div class="team-card-interactive" data-escuela="<?php echo $eq['codEscuela']; ?>">
+                            <!-- AGREGADO: data-evento para el filtrado -->
+                            <div class="team-card-interactive" 
+                                 data-escuela="<?php echo $eq['codEscuela']; ?>"
+                                 data-evento="<?php echo htmlspecialchars($eq['nombre_Evento']); ?>">
+                                
                                 <div class="card-team-name"><?php echo htmlspecialchars($eq['nombreEquipo']); ?></div>
                                 <div class="card-school"><i class="fas fa-university"></i> <?php echo htmlspecialchars($eq['nombreEscuela']); ?></div>
                                 <div style="margin-bottom:10px;">
@@ -291,9 +330,15 @@ $listaCategorias = ModeloProcesos::listarCategorias();
                     <?php else: ?>
                         <div style="grid-column: 1/-1; text-align:center; padding:40px; color:#999;">
                             <i class="fas fa-search" style="font-size:2rem; margin-bottom:10px;"></i>
-                            <p>No se encontraron equipos registrados.</p>
+                            <p>No hay equipos registrados en la base de datos.</p>
                         </div>
                     <?php endif; ?>
+
+                    <!-- MENSAJE NO RESULTS (Para JS) -->
+                    <div id="no-match-msg">
+                        <i class="fas fa-search" style="font-size:2rem; margin-bottom:10px;"></i>
+                        <p>No se encontraron equipos con los filtros seleccionados.</p>
+                    </div>
                 </div>
             </div>
 
@@ -512,20 +557,39 @@ $listaCategorias = ModeloProcesos::listarCategorias();
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Filtro y demás scripts...
+        // --- FUNCION DE FILTRADO COMBINADO ---
         function filtrarEquipos() {
-            const filtro = document.getElementById('schoolFilter').value;
+            // Obtenemos los valores de ambos selects
+            const filtroEscuela = document.getElementById('schoolFilter').value;
+            const filtroEvento = document.getElementById('eventFilter').value;
+            
             const tarjetas = document.querySelectorAll('.team-card-interactive');
+            const noMatchMsg = document.getElementById('no-match-msg');
             let visibles = 0;
+
             tarjetas.forEach(card => {
-                const escuela = card.getAttribute('data-escuela');
-                if (filtro === 'all' || escuela === filtro) {
-                    card.style.display = 'block'; visibles++;
+                const escuelaCard = card.getAttribute('data-escuela');
+                const eventoCard = card.getAttribute('data-evento');
+
+                // Lógica combinada (Y): Debe cumplir AMBAS condiciones para mostrarse
+                const coincideEscuela = (filtroEscuela === 'all' || escuelaCard === filtroEscuela);
+                const coincideEvento = (filtroEvento === 'all' || eventoCard === filtroEvento);
+
+                if (coincideEscuela && coincideEvento) {
+                    card.style.display = 'block';
+                    visibles++;
                 } else {
                     card.style.display = 'none';
                 }
             });
             document.getElementById('contadorEquipos').innerText = 'Mostrando ' + visibles + ' equipos';
+
+            // Mostrar mensaje si no hay resultados visibles (pero sí existen tarjetas ocultas)
+            if (visibles === 0 && tarjetas.length > 0) {
+                if(noMatchMsg) noMatchMsg.style.display = 'block';
+            } else {
+                if(noMatchMsg) noMatchMsg.style.display = 'none';
+            }
         }
         
         function abrirModalEditar(id, nombre) {

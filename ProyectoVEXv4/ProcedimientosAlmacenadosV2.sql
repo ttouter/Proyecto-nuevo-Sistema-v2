@@ -363,4 +363,29 @@ BEGIN
     SET mensaje = 'Rol asignado.';
 END //
 
+-- Procedimiento para obtener la lista completa y detallada de equipos
+-- Este SP es necesario para la sección "Base de Datos Equipos" del Admin Dashboard
+DROP PROCEDURE IF EXISTS ObtenerTodosLosEquiposDetallado //
+CREATE PROCEDURE ObtenerTodosLosEquiposDetallado()
+BEGIN
+    SELECT 
+        e.idEquipo,
+        e.nombreEquipo,
+        e.codEscuela_EscuelaProcedencia AS codEscuela,
+        ep.nombreEscuela,
+        c.nombre AS categoria,
+        e.nombre_Evento,
+        -- Lógica simple para estado, puedes hacerla más compleja si quieres
+        'Activo' AS estado, 
+        -- Concatenamos nombre del entrenador
+        CONCAT(IFNULL(a.nombre,''), ' ', IFNULL(a.apellidoPat,'')) AS nombre_entrenador,
+        -- Subconsulta para contar integrantes
+        (SELECT COUNT(*) FROM Participante p WHERE p.idEquipo_Equipo = e.idEquipo) AS total_integrantes
+    FROM Equipo e
+    JOIN EscuelaProcedencia ep ON e.codEscuela_EscuelaProcedencia = ep.codEscuela
+    JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
+    LEFT JOIN Asistente a ON e.idAsistente = a.idAsistente
+    ORDER BY e.idEquipo DESC;
+END //
+
 DELIMITER ;

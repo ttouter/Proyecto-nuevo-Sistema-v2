@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class ModeloAdmin {
 
-    // 1. Resumen (Usa SP)
+    // 1. Resumen
     public static function obtenerResumen() {
         global $pdo;
         try {
@@ -13,7 +13,7 @@ class ModeloAdmin {
         } catch (PDOException $e) { return null; }
     }
 
-    // 2. Listar Usuarios (Usa SP)
+    // 2. Listar Usuarios
     public static function listarUsuarios() {
         global $pdo;
         try {
@@ -23,17 +23,18 @@ class ModeloAdmin {
         } catch (PDOException $e) { return []; }
     }
 
-    // 3. Listar Equipos Resumen (Usa SP)
+    // 3. Listar Equipos (Resumen corto para tabla de inicio)
     public static function listarEquipos() {
         global $pdo;
         try {
-            $stmt = $pdo->prepare("CALL ListarEquiposResumen()");
+            $stmt = $pdo->prepare("CALL ListarEquiposAdmin()");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) { return []; }
     }
 
-    // 4. Listar Equipos Detallado (Tarjetas)
+    // 4. Listar Equipos Detallado (PARA BASE DE DATOS EQUIPOS)
+    // AHORA USA EL PROCEDIMIENTO ALMACENADO QUE CREAMOS
     public static function listarEquiposDetallado() {
         global $pdo;
         try {
@@ -43,85 +44,61 @@ class ModeloAdmin {
         } catch (PDOException $e) { return []; }
     }
 
-    // --- NUEVA FUNCIÓN PARA RECUPERAR ESCUELA ---
-    // Esta función permite obtener la escuela del usuario actual si no se envía en el formulario
+    // --- UTILERÍAS ---
     public static function obtenerEscuelaUsuario($id) {
         global $pdo;
         try {
-            // Intentar buscar en Entrenador primero (todos se crean como Entrenador al registrarse)
             $stmt = $pdo->prepare("SELECT codEscuela_EscuelaProcedencia FROM Entrenador WHERE idAsistente_Asistente = ?");
             $stmt->execute([$id]);
             $res = $stmt->fetchColumn();
             if($res) return $res;
             
-            // Si no está en Entrenador, buscar en Juez
             $stmt = $pdo->prepare("SELECT codEscuela_EscuelaProcedencia FROM Juez WHERE idAsistente_Asistente = ?");
             $stmt->execute([$id]);
             return $stmt->fetchColumn();
         } catch(Exception $e) { return null; }
     }
 
-    // --- FUNCIONES CORREGIDAS PARA ACTUALIZAR ROLES ---
-
+    // --- GESTIÓN DE ROLES ---
     public static function asignarRolEntrenador($id, $cod) { 
-        global $pdo; 
-        try { 
-            // Permite actualizar la escuela si ya existe
+        global $pdo; try { 
             $sql = "INSERT INTO Entrenador (idEntrenador, idAsistente_Asistente, codEscuela_EscuelaProcedencia) 
                     VALUES (?, ?, ?) 
                     ON DUPLICATE KEY UPDATE codEscuela_EscuelaProcedencia = VALUES(codEscuela_EscuelaProcedencia)";
-            
             $pdo->prepare($sql)->execute([$id, $id, $cod]); 
         } catch(Exception $e) {} 
     }
 
-    // ACTUALIZADA: Ahora recibe $cat (Categoría)
     public static function asignarRolJuez($id, $cod, $gr, $cat) { 
-        global $pdo; 
-        try { 
-            // Se agrega idCategoria al INSERT y al UPDATE
+        global $pdo; try { 
             $sql = "INSERT INTO Juez (idJuez, idAsistente_Asistente, codEscuela_EscuelaProcedencia, gradoEstudios, idCategoria) 
                     VALUES (?, ?, ?, ?, ?) 
                     ON DUPLICATE KEY UPDATE 
                         codEscuela_EscuelaProcedencia = VALUES(codEscuela_EscuelaProcedencia),
                         gradoEstudios = VALUES(gradoEstudios),
                         idCategoria = VALUES(idCategoria)"; 
-            
             $pdo->prepare($sql)->execute([$id, $id, $cod, $gr, $cat]); 
         } catch(Exception $e) {} 
     }
     
-    // --- FUNCIONES PARA LIMPIAR ROLES ---
     public static function quitarRolEntrenador($id) {
-        global $pdo; 
-        try {
-            $pdo->prepare("DELETE FROM Entrenador WHERE idAsistente_Asistente = ?")->execute([$id]);
-        } catch(Exception $e) {}
+        global $pdo; try { $pdo->prepare("DELETE FROM Entrenador WHERE idAsistente_Asistente = ?")->execute([$id]); } catch(Exception $e) {}
     }
 
     public static function quitarRolJuez($id) {
-        global $pdo; 
-        try {
-            $pdo->prepare("DELETE FROM Juez WHERE idAsistente_Asistente = ?")->execute([$id]);
-        } catch(Exception $e) {}
+        global $pdo; try { $pdo->prepare("DELETE FROM Juez WHERE idAsistente_Asistente = ?")->execute([$id]); } catch(Exception $e) {}
     }
 
-    // --- NUEVA FUNCIÓN DE VALIDACIÓN DE CONFLICTO ---
     public static function verificarConflictoInteres($idAsistente, $idCategoriaJuez) {
-        global $pdo;
-        try {
-            // Verifica si el asistente tiene equipos registrados en la categoría donde quiere ser juez
+        global $pdo; try {
             $sql = "SELECT COUNT(*) FROM Equipo WHERE idAsistente = ? AND idCategoria_Categoria = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$idAsistente, $idCategoriaJuez]);
-            
-            // Si el conteo es mayor a 0, existe un conflicto
             return $stmt->fetchColumn() > 0;
         } catch (Exception $e) { return false; }
     }
 
-    // --- OTRAS FUNCIONES ---
-
+    // --- OTROS ---
     public static function crearEvento($nombre, $lugar, $fecha) {
         global $pdo; try { 
             $stmt = $pdo->prepare("CALL AltaEvento(?, ?, ?, @mensaje)");
