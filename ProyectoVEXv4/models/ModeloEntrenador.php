@@ -6,19 +6,32 @@ class ModeloEntrenador {
     // Obtener toda la info para el dashboard en una sola carga
     public static function obtenerDatosDashboard($idAsistente) {
         global $pdo;
+        $stmt = null; // Inicializar para que esté disponible en el finally
         try {
+            // 1. Prepara y ejecuta la llamada al SP
             $stmt = $pdo->prepare("CALL ObtenerDashboardEntrenador(?)");
             $stmt->execute([$idAsistente]);
             
-            // 1. Datos de Escuela
+            // 2. Primer conjunto de resultados: Datos de Escuela
             $escuela = $stmt->fetch(PDO::FETCH_ASSOC);
             $stmt->nextRowset(); // Avanzar al siguiente set de resultados
             
-            // 2. Lista de Equipos
+            // 3. Segundo conjunto de resultados: Lista de Equipos
             $equipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             return ['escuela' => $escuela, 'equipos' => $equipos];
-        } catch (PDOException $e) { return null; }
+        } catch (PDOException $e) { 
+            // Esto imprimirá el error real de MySQL en el log del servidor
+            error_log("Error al obtener datos del dashboard del entrenador: " . $e->getMessage());
+            return null; 
+        } finally {
+            // Cierre explícito del cursor (muy importante para SPs con múltiples resultados)
+            if ($stmt) {
+                // Si hay más resultados pendientes, los descarta para que la siguiente consulta funcione
+                while ($stmt->nextRowset()) {;} 
+                $stmt->closeCursor();
+            }
+        }
     }
 
     // Obtener integrantes de un equipo para verlos en detalle
@@ -43,4 +56,3 @@ class ModeloEntrenador {
         } catch (PDOException $e) { return $e->getMessage(); }
     }
 }
-?>

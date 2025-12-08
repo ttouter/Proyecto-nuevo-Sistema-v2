@@ -56,7 +56,14 @@ BEGIN
         c.rangoMax,
         ev.nombre as nombre_Evento,
         (SELECT COUNT(*) FROM Participante p WHERE p.idEquipo_Equipo = e.idEquipo) as num_integrantes,
-        (SELECT COUNT(*) FROM Juez_Evaluacion_Equipo jee WHERE jee.idEquipo = e.idEquipo) as jueces_asignados
+        
+        -- CAMBIO APLICADO AQUÍ: Usamos GROUP_CONCAT para listar los nombres de los jueces.
+        (SELECT GROUP_CONCAT(CONCAT(a.nombre, ' ', a.apellidoPat) SEPARATOR ', ')
+         FROM Juez_Evaluacion_Equipo jee
+         JOIN Juez j ON jee.idJuez = j.idJuez
+         JOIN Asistente a ON j.idAsistente_Asistente = a.idAsistente
+         WHERE jee.idEquipo = e.idEquipo) as jueces_asignados
+         
     FROM Equipo e
     JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
     LEFT JOIN Evento ev ON e.nombre_Evento = ev.nombre

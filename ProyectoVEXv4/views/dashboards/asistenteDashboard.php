@@ -67,6 +67,8 @@ $eventos = ModeloProcesos::listarEventos();
         
         .judges-box { background: #f9f9f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; border: 1px dashed #ccc; }
         .judges-box strong { display: block; margin-bottom: 5px; color: var(--primary); }
+        /* Estilo para que los nombres de los jueces se vean bien */
+        .judges-list { display: block; white-space: pre-wrap; word-break: break-word; }
 
         .card-actions { margin-top: auto; display: flex; gap: 10px; }
         .btn-small { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: 0.2s; text-decoration: none; text-align: center; }
@@ -131,7 +133,10 @@ $eventos = ModeloProcesos::listarEventos();
 
                         <div class="judges-box">
                             <strong><i class="fas fa-gavel"></i> Jueces Asignados:</strong>
-                            <?php echo $eq['jueces_asignados'] ? $eq['jueces_asignados'] : 'Pendiente de asignación'; ?>
+                            <!-- La variable jueces_asignados ahora contiene los nombres concatenados o NULL -->
+                            <span class="judges-list">
+                                <?php echo $eq['jueces_asignados'] ? htmlspecialchars($eq['jueces_asignados']) : 'Pendiente de asignación'; ?>
+                            </span>
                         </div>
 
                         <div class="card-actions">
