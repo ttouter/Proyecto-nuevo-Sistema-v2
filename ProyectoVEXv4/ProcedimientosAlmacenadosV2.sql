@@ -13,41 +13,32 @@ CREATE PROCEDURE AltaAsistente(
     IN p_sexo ENUM('Hombre','Mujer'),
     IN p_email VARCHAR(100),
     IN p_password VARCHAR(255),
-    IN p_codEscuela VARCHAR(50), -- 1. Nuevo parámetro agregado (el 8vo argumento)
+    IN p_codEscuela VARCHAR(50),
     OUT mensaje VARCHAR(100)
 )
 BEGIN
     DECLARE v_idAsistente INT;
-
-    -- Validar si el correo ya existe
     IF EXISTS (SELECT 1 FROM Asistente WHERE email = p_email) THEN
         SET mensaje = 'El correo ya está registrado.';
     ELSE
-        -- 2. Insertar en la tabla base Asistente
         INSERT INTO Asistente (nombre, apellidoPat, apellidoMat, sexo, email, password)
         VALUES (p_nombre, p_apellidoPat, p_apellidoMat, p_sexo, p_email, p_password);
-        
-        -- Obtener el ID generado automáticamente
         SET v_idAsistente = LAST_INSERT_ID();
-
-        -- 3. Insertar automáticamente en la tabla Entrenador con la Escuela
-        -- (Esto evita que se pierda el dato de la escuela seleccionada)
         INSERT INTO Entrenador (idEntrenador, idAsistente_Asistente, codEscuela_EscuelaProcedencia)
         VALUES (v_idAsistente, v_idAsistente, p_codEscuela);
-
         SET mensaje = 'Registro exitoso';
     END IF;
 END //
 
 CREATE PROCEDURE ObtenerDashboardEntrenador(IN p_idAsistente INT)
 BEGIN
-    -- 1. Primer conjunto de resultados: Datos de la Escuela del Entrenador
+    -- 1. Primer conjunto: Datos de la Escuela
     SELECT ep.codEscuela as escuela_id, ep.nombreEscuela as nombre_escuela
     FROM Entrenador ent
     JOIN EscuelaProcedencia ep ON ent.codEscuela_EscuelaProcedencia = ep.codEscuela
     WHERE ent.idAsistente_Asistente = p_idAsistente;
 
-    -- 2. Segundo conjunto de resultados: Lista de Equipos de este Entrenador
+    -- 2. Segundo conjunto: Lista de Equipos + Jueces de esa Categoría
     SELECT 
         e.idEquipo, 
         e.nombreEquipo, 
@@ -57,12 +48,12 @@ BEGIN
         ev.nombre as nombre_Evento,
         (SELECT COUNT(*) FROM Participante p WHERE p.idEquipo_Equipo = e.idEquipo) as num_integrantes,
         
-        -- CAMBIO APLICADO AQUÍ: Usamos GROUP_CONCAT para listar los nombres de los jueces.
+        -- CORRECCIÓN AQUI:
+        -- Buscamos jueces cuya 'idCategoria' coincida con la categoría del equipo
         (SELECT GROUP_CONCAT(CONCAT(a.nombre, ' ', a.apellidoPat) SEPARATOR ', ')
-         FROM Juez_Evaluacion_Equipo jee
-         JOIN Juez j ON jee.idJuez = j.idJuez
+         FROM Juez j
          JOIN Asistente a ON j.idAsistente_Asistente = a.idAsistente
-         WHERE jee.idEquipo = e.idEquipo) as jueces_asignados
+         WHERE j.idCategoria = e.idCategoria_Categoria) as jueces_asignados
          
     FROM Equipo e
     JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
@@ -221,14 +212,25 @@ END //
 DROP PROCEDURE IF EXISTS ObtenerEquiposPorJuez //
 CREATE PROCEDURE ObtenerEquiposPorJuez(IN p_idJuez INT)
 BEGIN
-    SELECT e.idEquipo, e.nombreEquipo, ep.nombreEscuela, c.nombre as categoria,
-    CASE WHEN EXISTS (SELECT 1 FROM EvaluacionDiseño ed WHERE ed.idEquipo = e.idEquipo AND ed.idJuez = p_idJuez) 
-         THEN 'Evaluado' ELSE 'Pendiente' END as estado
-    FROM Juez_Evaluacion_Equipo jee
-    JOIN Equipo e ON jee.idEquipo = e.idEquipo
+    -- Obtenemos la categoría asignada a este juez
+    DECLARE v_categoriaJuez INT;
+    SELECT idCategoria INTO v_categoriaJuez FROM Juez WHERE idJuez = p_idJuez;
+
+    SELECT 
+        e.idEquipo, 
+        e.nombreEquipo, 
+        ep.nombreEscuela, 
+        c.nombre as categoria,
+        -- Verificamos si ya existe una evaluación de diseño hecha por este juez
+        CASE 
+            WHEN EXISTS (SELECT 1 FROM EvaluacionDiseño ed WHERE ed.idEquipo = e.idEquipo AND ed.idJuez = p_idJuez) 
+            THEN 'Evaluado' 
+            ELSE 'Pendiente' 
+        END as estado
+    FROM Equipo e
     JOIN EscuelaProcedencia ep ON e.codEscuela_EscuelaProcedencia = ep.codEscuela
     JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
-    WHERE jee.idJuez = p_idJuez;
+    WHERE e.idCategoria_Categoria = v_categoriaJuez; -- Filtramos por la categoría del juez
 END //
 
 -- (NUEVO) Obtener información básica de un equipo (Para el encabezado de evaluación)
