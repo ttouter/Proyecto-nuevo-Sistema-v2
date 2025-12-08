@@ -19,9 +19,10 @@ $idEquipo = $_GET['id'];
 
 // 3. Consultar Información
 $infoEquipo = ModeloProcesos::obtenerInfoEquipo($idEquipo);
+// AHORA ESTO FUNCIONARÁ PORQUE EL SP "ObtenerIntegrantesEquipo" YA EXISTE EN LA BD
 $integrantes = ModeloEntrenador::obtenerIntegrantes($idEquipo);
 
-// Simulamos calificaciones
+// Simulamos calificaciones (o puedes conectarlo a un API real después)
 $calificaciones = [
     'diseno' => 'Pendiente', 
     'programacion' => 'Pendiente', 
@@ -165,6 +166,12 @@ if (!$infoEquipo) {
         .score-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; }
         .score-row:last-child { border: none; }
 
+        /* Estilos para la nueva sección de Info */
+        .info-row { margin-bottom: 15px; }
+        .info-row label { display: block; font-size: 0.85rem; color: #888; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+        .info-row span { display: block; font-size: 1rem; color: #333; font-weight: 500; }
+        .info-row i { color: #40407A; margin-right: 8px; width: 20px; text-align: center; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -211,7 +218,7 @@ if (!$infoEquipo) {
 
         <div class="content-grid">
             
-            <!-- LISTA DE INTEGRANTES -->
+            <!-- LISTA DE INTEGRANTES (Ahora funcional con el SP) -->
             <div class="section-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #f4f7f6;">
                     <h3 style="margin:0; color:#2C2C54;"><i class="fas fa-users" style="color:#3498db;"></i> Integrantes</h3>
@@ -222,12 +229,14 @@ if (!$infoEquipo) {
                     <div style="text-align:center; padding:30px; color:#999;">
                         <i class="fas fa-user-plus fa-2x" style="opacity:0.3; margin-bottom:10px;"></i>
                         <p>No hay integrantes registrados.</p>
+                        <!-- Enlace para volver y agregar -->
                         <a href="asistenteDashboard.php" style="color:#3498db; text-decoration:none; font-weight:bold;">Ir a agregar</a>
                     </div>
                 <?php else: ?>
                     <?php foreach ($integrantes as $int): ?>
                         <div class="member-card">
                             <div style="display:flex; align-items:center;">
+                                <!-- Avatar con inicial y color según sexo -->
                                 <div class="member-avatar" style="background: <?php echo ($int['sexo']=='Mujer'?'#e84393':'#0984e3'); ?>;">
                                     <?php echo strtoupper(substr($int['nombre'], 0, 1)); ?>
                                 </div>
@@ -241,6 +250,7 @@ if (!$infoEquipo) {
                                 </div>
                             </div>
                             
+                            <!-- Botón Eliminar (Funcional con el SP BajaParticipante) -->
                             <a href="../../controllers/control_eliminar_participante.php?id=<?php echo $int['numControl']; ?>" 
                                onclick="return confirm('¿Eliminar a este integrante?');"
                                style="color:#ff7675; text-decoration:none; padding:8px; border-radius:50%; transition:0.2s;">
@@ -253,6 +263,23 @@ if (!$infoEquipo) {
 
             <!-- PANEL LATERAL (RESUMEN) -->
             <div>
+                <!-- NUEVA SECCIÓN: INFORMACIÓN DE TORNEO -->
+                <div class="section-box">
+                    <h4 style="margin:0 0 20px 0; color:#2C2C54; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        <i class="fas fa-info-circle"></i> Detalles del Torneo
+                    </h4>
+                    
+                    <div class="info-row">
+                        <label>Institución</label>
+                        <span><i class="fas fa-university"></i> <?php echo htmlspecialchars($infoEquipo['nombreEscuela']); ?></span>
+                    </div>
+
+                    <div class="info-row">
+                        <label>Jueces Asignados</label>
+                        <span><i class="fas fa-gavel"></i> <?php echo htmlspecialchars($infoEquipo['jueces_asignados']); ?></span>
+                    </div>
+                </div>
+
                 <!-- Estado Evaluaciones -->
                 <div class="section-box">
                     <h4 style="margin:0 0 15px 0; color:#2C2C54;"><i class="fas fa-clipboard-list"></i> Estado Evaluación</h4>

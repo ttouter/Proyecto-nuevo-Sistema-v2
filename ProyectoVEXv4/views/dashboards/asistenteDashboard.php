@@ -67,7 +67,6 @@ $eventos = ModeloProcesos::listarEventos();
         
         .judges-box { background: #f9f9f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; border: 1px dashed #ccc; }
         .judges-box strong { display: block; margin-bottom: 5px; color: var(--primary); }
-        /* Estilo para que los nombres de los jueces se vean bien */
         .judges-list { display: block; white-space: pre-wrap; word-break: break-word; }
 
         .card-actions { margin-top: auto; display: flex; gap: 10px; }
@@ -88,9 +87,36 @@ $eventos = ModeloProcesos::listarEventos();
         
         /* VALIDACIÓN DE EDAD */
         .age-warning { color: #dc3545; font-size: 0.85rem; display: none; margin-top: 5px; font-weight: bold; }
+
+        /* --- ALERTAS FLOTANTES (Estilo Admin) --- */
+        .alert-float { 
+            position: fixed; top: 20px; right: 20px; 
+            padding: 15px 25px; border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            z-index: 2000; display: none; font-weight: bold;
+            animation: slideInRight 0.5s ease-out;
+            max-width: 400px;
+        }
+        
+        .alert-success { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+    
+    <!-- CONTENEDORES PARA ALERTAS FLOTANTES -->
+    <div id="alertBoxSuccess" class="alert-float alert-success">
+        <i class="fas fa-check-circle"></i> <span id="alertTextSuccess"></span>
+    </div>
+    
+    <div id="alertBoxError" class="alert-float alert-error">
+        <i class="fas fa-exclamation-circle"></i> <span id="alertTextError"></span>
+    </div>
 
     <aside class="sidebar">
         <div class="brand"><i class="fas fa-robot"></i> VEX Coach</div>
@@ -133,14 +159,12 @@ $eventos = ModeloProcesos::listarEventos();
 
                         <div class="judges-box">
                             <strong><i class="fas fa-gavel"></i> Jueces Asignados:</strong>
-                            <!-- La variable jueces_asignados ahora contiene los nombres concatenados o NULL -->
                             <span class="judges-list">
                                 <?php echo $eq['jueces_asignados'] ? htmlspecialchars($eq['jueces_asignados']) : 'Pendiente de asignación'; ?>
                             </span>
                         </div>
 
                         <div class="card-actions">
-                            <!-- BOTÓN MODIFICADO PARA IR A DETALLES -->
                             <a href="detallesEquipo.php?id=<?php echo $eq['idEquipo']; ?>" class="btn-small btn-view">
                                 <i class="fas fa-eye"></i> Detalles
                             </a>
@@ -252,14 +276,12 @@ $eventos = ModeloProcesos::listarEventos();
     </div>
 
     <script>
-        // Variables globales para la validación de edad actual
         let currentMinAge = 0;
         let currentMaxAge = 99;
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // Abrir modal de integrante y configurar reglas
         function openAddMember(idEquipo, nombreEquipo, minAge, maxAge) {
             document.getElementById('inputTeamId').value = idEquipo;
             document.getElementById('spanTeamName').innerText = nombreEquipo;
@@ -269,7 +291,6 @@ $eventos = ModeloProcesos::listarEventos();
             openModal('modalMember');
         }
 
-        // VALIDACIÓN DE EDAD EN TIEMPO REAL
         document.getElementById('inputAge').addEventListener('input', function() {
             const edad = parseInt(this.value);
             const warning = document.getElementById('ageWarning');
@@ -288,12 +309,44 @@ $eventos = ModeloProcesos::listarEventos();
             }
         });
 
-        // Cerrar modales al hacer click fuera
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = "none";
             }
         }
+
+        // --- MANEJO DE NOTIFICACIONES URL ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // 1. Mensaje de Éxito (Verde)
+            const msg = urlParams.get('msg');
+            if(msg) {
+                const alertBox = document.getElementById('alertBoxSuccess');
+                document.getElementById('alertTextSuccess').innerText = msg;
+                alertBox.style.display = 'block';
+                
+                // Ocultar después de 5 seg
+                setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
+                
+                // Limpiar URL para que no salga al recargar
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // 2. Mensaje de Error (Rojo)
+            const error = urlParams.get('error');
+            if(error) {
+                const alertBox = document.getElementById('alertBoxError');
+                document.getElementById('alertTextError').innerText = error;
+                alertBox.style.display = 'block';
+                
+                // Ocultar después de 6 seg
+                setTimeout(() => { alertBox.style.display = 'none'; }, 6000);
+
+                // Limpiar URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
     </script>
 </body>
 </html>

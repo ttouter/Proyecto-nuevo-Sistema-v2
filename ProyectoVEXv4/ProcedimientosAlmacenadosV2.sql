@@ -172,9 +172,24 @@ CREATE PROCEDURE AltaParticipante(
     OUT mensaje VARCHAR(100)
 )
 BEGIN
-    INSERT INTO Participante (numControl, nombre, apellidoPat, apellidoMat, edad, sexo, idEquipo_Equipo)
-    VALUES (p_numControl, p_nombre, p_apellidoPat, p_apellidoMat, p_edad, p_sexo, p_idEquipo);
-    SET mensaje = 'Participante registrado.';
+    -- 1. Validar duplicidad de Nombre Completo
+    IF EXISTS (
+        SELECT 1 FROM Participante 
+        WHERE nombre = p_nombre 
+          AND apellidoPat = p_apellidoPat 
+          AND apellidoMat = p_apellidoMat
+    ) THEN
+        SET mensaje = 'Error: Ya existe un alumno registrado con ese Nombre y Apellidos.';
+    
+    -- 2. Validar duplicidad de Número de Control
+    ELSEIF EXISTS (SELECT 1 FROM Participante WHERE numControl = p_numControl) THEN
+        SET mensaje = 'Error: El Número de Control ya está registrado.';
+        
+    ELSE
+        INSERT INTO Participante (numControl, nombre, apellidoPat, apellidoMat, edad, sexo, idEquipo_Equipo)
+        VALUES (p_numControl, p_nombre, p_apellidoPat, p_apellidoMat, p_edad, p_sexo, p_idEquipo);
+        SET mensaje = 'Participante registrado exitosamente.';
+    END IF;
 END //
 
 -- =================================================================
@@ -234,16 +249,29 @@ BEGIN
 END //
 
 -- (NUEVO) Obtener información básica de un equipo (Para el encabezado de evaluación)
-DROP PROCEDURE IF EXISTS ObtenerInfoEquipo //
 CREATE PROCEDURE ObtenerInfoEquipo(IN p_idEquipo INT)
 BEGIN
-    SELECT e.nombreEquipo, c.nombre as categoria, ep.nombreEscuela
+    SELECT 
+        e.nombreEquipo, 
+        c.nombre as categoria, 
+        ep.nombreEscuela,
+        -- Subconsulta modificada para coincidir con el Dashboard (Por Categoría)
+        -- Y agregando la Escuela de Procedencia del Juez
+        IFNULL((
+            SELECT GROUP_CONCAT(
+                CONCAT(a.nombre, ' ', a.apellidoPat, ' (', IFNULL(epj.nombreEscuela, 'Sin escuela'), ')') 
+                SEPARATOR ', '
+            )
+            FROM Juez j
+            JOIN Asistente a ON j.idAsistente_Asistente = a.idAsistente
+            LEFT JOIN EscuelaProcedencia epj ON j.codEscuela_EscuelaProcedencia = epj.codEscuela
+            WHERE j.idCategoria = e.idCategoria_Categoria
+        ), 'Pendiente de asignación') as jueces_asignados
     FROM Equipo e
     JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
     JOIN EscuelaProcedencia ep ON e.codEscuela_EscuelaProcedencia = ep.codEscuela
     WHERE e.idEquipo = p_idEquipo;
 END //
-
 -- =================================================================
 -- 6. EVALUACIONES (GUARDAR Y LEER)
 -- =================================================================
@@ -395,6 +423,21 @@ BEGIN
     JOIN Categoria c ON e.idCategoria_Categoria = c.idCategoria
     LEFT JOIN Asistente a ON e.idAsistente = a.idAsistente
     ORDER BY e.idEquipo DESC;
+END //
+
+DROP PROCEDURE IF EXISTS ObtenerIntegrantesEquipo //
+CREATE PROCEDURE ObtenerIntegrantesEquipo(IN p_idEquipo INT)
+BEGIN
+    SELECT numControl, nombre, apellidoPat, apellidoMat, edad, sexo 
+    FROM Participante 
+    WHERE idEquipo_Equipo = p_idEquipo
+    ORDER BY apellidoPat ASC;
+END //
+
+DROP PROCEDURE IF EXISTS BajaParticipante //
+CREATE PROCEDURE BajaParticipante(IN p_numControl INT)
+BEGIN
+    DELETE FROM Participante WHERE numControl = p_numControl;
 END //
 
 DELIMITER ;
